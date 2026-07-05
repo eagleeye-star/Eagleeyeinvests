@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Watchlist — EagleEyE</title>
+<link rel="stylesheet" href="style.css">
+<script>document.documentElement.setAttribute("data-theme",localStorage.getItem("ee_theme")||"dark");</script>
+<style>
+.wl-wrap{max-width:900px;margin:0 auto;padding:28px 24px 60px;}
+.wl-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px;}
+.wl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;margin-bottom:28px;}
+.wl-card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:16px;position:relative;transition:border-color .15s;}
+.wl-card:hover{border-color:var(--gold-dim);}
+.wl-card .tk{font-size:18px;font-weight:700;font-family:var(--font-mono);}
+.wl-card .nm{font-size:11.5px;color:var(--text-dim);margin-top:2px;margin-bottom:12px;}
+.wl-card .price{font-size:22px;font-weight:700;font-family:var(--font-display);}
+.wl-card .chg{font-size:12px;margin-top:4px;font-family:var(--font-mono);}
+.wl-card .target{font-size:11.5px;color:var(--text-faint);margin-top:8px;padding-top:8px;border-top:1px solid var(--border-soft);}
+.wl-card .remove-btn{position:absolute;top:10px;right:10px;background:none;border:none;color:var(--text-faint);cursor:pointer;font-size:14px;padding:2px 6px;border-radius:4px;}
+.wl-card .remove-btn:hover{color:var(--red);background:var(--red-fill);}
+.wl-card .note{font-size:11.5px;color:var(--text-dim);margin-top:6px;font-style:italic;}
+.add-modal .field{margin-bottom:12px;}
+.add-modal .field label{font-size:11px;color:var(--text-dim);display:block;margin-bottom:5px;font-weight:500;text-transform:uppercase;letter-spacing:0.04em;}
+.add-modal .field input,.add-modal .field select,.add-modal .field textarea{width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;background:var(--panel-2);color:var(--text);font-family:var(--font-body);}
+.add-modal .field textarea{resize:none;height:70px;}
+.empty-wl{text-align:center;padding:60px 20px;color:var(--text-dim);}
+.empty-wl .icon{font-size:40px;margin-bottom:16px;opacity:0.3;}
+.above-target{color:var(--green-bright);}
+.below-target{color:var(--red);}
+.at-target{color:var(--gold-bright);}
+</style>
+</head>
+<body>
+<div id="chrome-header"></div>
+
+<!-- Add to watchlist modal -->
+<div class="modal-bg" id="wlModal">
+  <div class="modal-box add-modal">
+    <div class="modal-title">Add to watchlist</div>
+    <div class="modal-sub">Track a stock you're interested in buying.</div>
+    <div class="field"><label>Stock</label><select id="wl-ticker"><option value="">Select a stock…</option></select></div>
+    <div class="field"><label>Target buy price (GH₵) — optional</label><input type="number" id="wl-target" placeholder="e.g. 5.50" min="0" step="0.01"></div>
+    <div class="field"><label>Notes — optional</label><textarea id="wl-note" placeholder="e.g. Waiting for price to drop before buying…"></textarea></div>
+    <div class="err-msg" id="wl-err"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="document.getElementById('wlModal').classList.remove('open')">Cancel</button>
+      <button class="btn btn-gold" onclick="addToWatchlist()">Add to watchlist</button>
+    </div>
+  </div>
+</div>
+
+<div class="wl-wrap">
+  <div class="wl-header">
+    <div>
+      <div style="font-family:var(--font-display);font-size:24px;font-weight:600;">Watchlist</div>
+      <div style="font-size:13px;color:var(--text-dim);margin-top:4px;">Stocks you're watching — track prices against your target.</div>
+    </div>
+    <button class="btn btn-gold" onclick="openWlModal()">+ Add stock</button>
+  </div>
+
+  <div class="wl-grid" id="wl-grid">
+    <div class="empty-wl" style="grid-column:1/-1;">
+      <div class="icon">👁</div>
+      <div style="font-size:15px;font-weight:600;margin-bottom:8px;">Your watchlist is empty</div>
+      <div style="font-size:13px;margin-bottom:20px;">Add stocks you're interested in buying to track their prices.</div>
+      <button class="btn btn-gold" onclick="openWlModal()">+ Add your first stock</button>
+    </div>
+  </div>
+
+  <!-- Market summary for watchlist stocks -->
+  <div id="wl-summary" style="display:none;">
+    <div style="font-size:13px;font-weight:600;margin-bottom:12px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.05em;">At a glance</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;" id="wl-stats"></div>
+  </div>
+</div>
+
+<div id="chrome-footer"></div>
+<script src="auth.js"></script>
+<script src="auth-guard.js"></script>
+<script src="data.js"></script>
+<script>
+mountChrome('watchlist.html');
+
+const STORAGE_KEY = 'ee_watchlist';
+
+// Load watchlist from localStorage
+function getWatchlist(){ return JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]'); }
+function saveWatchlist(wl){ localStorage.setItem(STORAGE_KEY, JSON.stringify(wl)); }
+
+// Populate ticker dropdown
+const sel = document.getElementById('wl-ticker');
+gseStocks.forEach(s=>{
+  sel.innerHTML += `<option value="${s.ticker}" data-name="${s.name}" data-sector="${s.sector}">${s.ticker} — ${s.name}</option>`;
+});
+
+function openWlModal(){
+  sel.value='';
+  document.getElementById('wl-target').value='';
+  document.getElementById('wl-note').value='';
+  document.getElementById('wl-err').classList.remove('show');
+  document.getElementById('wlModal').classList.add('open');
+}
+document.getElementById('wlModal').addEventListener('click',e=>{ if(e.target===e.currentTarget) e.currentTarget.classList.remove('open'); });
+
+function addToWatchlist(){
+  const ticker = sel.value;
+  const target = document.getElementById('wl-target').value;
+  const note   = document.getElementById('wl-note').value.trim();
+  const errEl  = document.getElementById('wl-err');
+  errEl.classList.remove('show');
+
+  if(!ticker){ errEl.textContent='Please select a stock.'; errEl.classList.add('show'); return; }
+
+  const wl = getWatchlist();
+  if(wl.find(w=>w.ticker===ticker)){
+    errEl.textContent='This stock is already on your watchlist.';
+    errEl.classList.add('show'); return;
+  }
+
+  const opt = sel.options[sel.selectedIndex];
+  wl.push({
+    ticker,
+    name:   opt.dataset.name,
+    sector: opt.dataset.sector,
+    target: target ? parseFloat(target) : null,
+    note:   note || '',
+    addedAt: new Date().toISOString(),
+  });
+  saveWatchlist(wl);
+  document.getElementById('wlModal').classList.remove('open');
+  renderWatchlist();
+}
+
+function removeFromWatchlist(ticker){
+  const wl = getWatchlist().filter(w=>w.ticker!==ticker);
+  saveWatchlist(wl);
+  renderWatchlist();
+}
+
+function renderWatchlist(){
+  const wl  = getWatchlist();
+  const grid = document.getElementById('wl-grid');
+  const pm  = {};
+  gseStocks.forEach(s=>{ pm[s.ticker]=s; });
+
+  if(!wl.length){
+    grid.innerHTML = `<div class="empty-wl" style="grid-column:1/-1;">
+      <div class="icon">👁</div>
+      <div style="font-size:15px;font-weight:600;margin-bottom:8px;">Your watchlist is empty</div>
+      <div style="font-size:13px;margin-bottom:20px;">Add stocks you're interested in buying to track their prices.</div>
+      <button class="btn btn-gold" onclick="openWlModal()">+ Add your first stock</button>
+    </div>`;
+    document.getElementById('wl-summary').style.display='none';
+    return;
+  }
+
+  grid.innerHTML = wl.map(w=>{
+    const s = pm[w.ticker] || {};
+    const price = s.price || 0;
+    const chg   = s.chg   || 0;
+    const up    = chg >= 0;
+
+    // Target analysis
+    let targetHtml = '';
+    if(w.target){
+      const diff = ((price - w.target)/w.target*100);
+      const cls  = price >= w.target ? 'above-target' : 'below-target';
+      const label= price >= w.target
+        ? `▲ ${fmt(diff,1)}% above your target`
+        : `▼ ${fmt(Math.abs(diff),1)}% below your target`;
+      targetHtml = `<div class="target">Target: GH₵${fmt(w.target,2)} — <span class="${cls}">${label}</span></div>`;
+    }
+
+    const noteHtml = w.note ? `<div class="note">"${w.note}"</div>` : '';
+
+    return `<div class="wl-card">
+      <button class="remove-btn" onclick="removeFromWatchlist('${w.ticker}')" title="Remove">✕</button>
+      <div class="tk">${w.ticker}</div>
+      <div class="nm">${w.name}</div>
+      <div class="price">GH₵${fmt(price,2)}</div>
+      <div class="chg ${up?'up':'dn'}">${up?'▲':'▼'} ${fmt(Math.abs(chg),2)}% today</div>
+      ${targetHtml}
+      ${noteHtml}
+    </div>`;
+  }).join('');
+
+  // Summary stats
+  const aboveTarget = wl.filter(w=>w.target && (pm[w.ticker]?.price||0) >= w.target).length;
+  const belowTarget = wl.filter(w=>w.target && (pm[w.ticker]?.price||0) < w.target).length;
+  const noTarget    = wl.filter(w=>!w.target).length;
+
+  document.getElementById('wl-summary').style.display = wl.some(w=>w.target) ? 'block' : 'none';
+  document.getElementById('wl-stats').innerHTML = `
+    <div style="background:var(--green-fill);border:1px solid rgba(45,201,141,0.2);border-radius:var(--radius-sm);padding:14px;text-align:center;">
+      <div style="font-size:24px;font-weight:700;color:var(--green-bright);">${aboveTarget}</div>
+      <div style="font-size:11.5px;color:var(--text-dim);margin-top:4px;">At or above target</div>
+    </div>
+    <div style="background:var(--red-fill);border:1px solid rgba(217,89,76,0.2);border-radius:var(--radius-sm);padding:14px;text-align:center;">
+      <div style="font-size:24px;font-weight:700;color:var(--red);">${belowTarget}</div>
+      <div style="font-size:11.5px;color:var(--text-dim);margin-top:4px;">Below target</div>
+    </div>
+    <div style="background:var(--panel);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;text-align:center;">
+      <div style="font-size:24px;font-weight:700;">${wl.length}</div>
+      <div style="font-size:11.5px;color:var(--text-dim);margin-top:4px;">Total watching</div>
+    </div>`;
+}
+
+// Initial render
+renderWatchlist();
+
+// Update prices when live data loads
+loadLiveData(()=>{ renderWatchlist(); });
+</script>
+<script>
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{ navigator.serviceWorker.register('/sw.js').catch(e=>{}); });
+}
+</script>
+</body>
+</html>

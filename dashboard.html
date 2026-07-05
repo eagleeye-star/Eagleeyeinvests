@@ -269,7 +269,14 @@
       <!-- Holdings table -->
       <div class="section">
         <div class="section-head">
-          <div class="section-title">Holdings <span id="h-count" style="color:var(--text-faint);font-size:12px;"></span></div>
+          <div>
+            <div class="section-title">Holdings <span id="h-count" style="color:var(--text-faint);font-size:12px;"></span></div>
+            <div id="h-limit" style="font-size:11px;margin-top:3px;display:none;font-family:var(--font-mono);"></div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <button class="btn btn-ghost btn-sm" onclick="printHoldings()">🖨 Print</button>
+            <button class="btn btn-gold btn-sm" onclick="openModal()">+ Add holding</button>
+          </div>
         </div>
         <div id="holdings-wrap">
           <div class="loading-state"><span class="spinner-sm"></span>Loading holdings…</div>
@@ -518,6 +525,24 @@ function renderHoldings(){
   document.getElementById('s-market-sub').textContent = ms.countdown;
 
   document.getElementById('h-count').textContent = '('+rows.length+' stocks)';
+  // Show limit indicator for free users
+  if(!isPremium()){
+    const remaining = 10 - liveHoldings.length;
+    const limitEl = document.getElementById('h-limit');
+    if(limitEl){
+      if(remaining <= 3 && remaining > 0){
+        limitEl.textContent = remaining+' slot'+(remaining===1?'':'s')+' remaining (free plan)';
+        limitEl.style.color = 'var(--amber,#E8A020)';
+      } else if(remaining <= 0){
+        limitEl.textContent = 'Limit reached — upgrade for unlimited';
+        limitEl.style.color = 'var(--red)';
+      } else {
+        limitEl.textContent = liveHoldings.length+'/10 holdings (free plan)';
+        limitEl.style.color = 'var(--text-faint)';
+      }
+      limitEl.style.display = 'block';
+    }
+  }
   renderGoal(totVal);
   renderSectors(rows, totVal);
   renderDividends(rows);
@@ -649,19 +674,38 @@ function renderMovers(){
    NEWS
 ============================================================ */
 async function fetchNews(){
+  // GSE-relevant keywords — only show articles mentioning these
+  const GSE_KEYWORDS = [
+    'gse','ghana stock','stock exchange','shares','dividend','ipo',
+    'listing','equity','investor','securities','capital market',
+    'mtn ghana','gcb','ecobank','calbank','access bank','goil',
+    'ggbl','guinness ghana','total energies','kasapreko','republic bank',
+    'enterprise group','bond','bank of ghana','sec ghana','interest rate',
+    'market cap','trading session','annual report','earnings','profit',
+    'loss','revenue','quarterly','rights issue','zse','bourse'
+  ];
+  function isGSERelated(title){
+    const t = title.toLowerCase();
+    return GSE_KEYWORDS.some(k=>t.includes(k));
+  }
   try{
     const r = await fetch('/api/news',{cache:'no-store'});
     const d = await r.json();
-    const items = (d.articles||[]).slice(0,5);
+    // Filter to GSE-relevant articles only
+    const items = (d.articles||[])
+      .filter(a => isGSERelated(a.title))
+      .slice(0,6);
     const el = document.getElementById('news-wrap');
-    if(!items.length){ el.innerHTML='<div style="font-size:12px;color:var(--text-faint);padding:10px 0;">No news available.</div>'; return; }
+    if(!items.length){
+      el.innerHTML='<div style="font-size:12px;color:var(--text-faint);padding:10px 0;">No GSE news available right now.</div>';
+      return;
+    }
     el.innerHTML = items.map(a=>`
       <div class="news-item">
         <a href="${a.link||'#'}" target="_blank" rel="noopener">
           <div class="news-title">${a.title}</div>
           <div class="news-meta">
-            <span class="news-src">${a.source}</span>
-            <span>${a.date}</span>
+            <span style="font-size:10px;color:var(--text-faint);">${a.date}</span>
           </div>
         </a>
       </div>`).join('');
@@ -747,6 +791,12 @@ tickerSel.innerHTML = '<option value="">Select a stock…</option>';
 gseStocks.forEach(s=>{ tickerSel.innerHTML+=`<option value="${s.ticker}" data-name="${s.name}" data-sector="${s.sector}">${s.ticker} — ${s.name}</option>`; });
 
 function openModal(){
+  // Free plan limit: max 10 holdings
+  if(!isPremium() && liveHoldings.length >= 10){
+    alert('Free plan is limited to 10 holdings.\n\nUpgrade to Premium for unlimited holdings.');
+    window.location.href = 'pricing.html';
+    return;
+  }
   tickerSel.value='';
   document.getElementById('m-shares').value='';
   document.getElementById('m-cost').value='';

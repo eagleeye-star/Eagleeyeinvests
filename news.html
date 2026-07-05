@@ -104,29 +104,36 @@ const SOURCE_URLS = {
 async function loadNews(){
   const btn=document.getElementById('refresh-btn');
   btn.disabled=true; btn.textContent='↻ Loading…';
+
+  // GSE-relevant keywords filter
+  const GSE_KEYWORDS = [
+    'gse','ghana stock','stock exchange','shares','dividend','ipo',
+    'listing','equity','investor','securities','capital market',
+    'mtn ghana','gcb','ecobank','calbank','access bank','goil',
+    'ggbl','guinness ghana','total energies','kasapreko','republic bank',
+    'enterprise group','bond','bank of ghana','sec ghana','interest rate',
+    'market cap','trading session','annual report','earnings','profit',
+    'loss','revenue','quarterly','rights issue','bourse','nairobi stock',
+    'nigerian stock','west africa finance','african market'
+  ];
+  function isGSERelated(title,desc){
+    const t=(title+' '+(desc||'')).toLowerCase();
+    return GSE_KEYWORDS.some(k=>t.includes(k));
+  }
+
   try{
     const res=await fetch('/api/news');
     const data=await res.json();
-    allArticles=data.articles||[];
+    // Filter to GSE-relevant only
+    allArticles=(data.articles||[]).filter(a=>isGSERelated(a.title,a.description));
 
-    // Update source pills
-    const sourcesInData=new Set(allArticles.map(a=>a.source));
-    const allSources=['Ghana Stock Exchange','Business & Financial Times','MyJoyOnline','Citi Business News','Graphic Business','Pulse Ghana','BusinessDay'];
-    const strip=document.getElementById('sources-strip');
-    strip.innerHTML='<span style="font-size:11.5px;color:var(--text-faint);">Sources:</span>';
-    allSources.forEach(s=>{
-      const live=sourcesInData.has(s);
-      const icon=SOURCE_ICONS[s]||'📄';
-      const url=SOURCE_URLS[s]||'#';
-      strip.innerHTML+=`<a href="${url}" target="_blank" rel="noopener" class="source-pill ${live?'live':'offline'}" title="${live?'Live':'No articles fetched'}" style="text-decoration:none;">
-        <span class="dot"></span>${icon} ${s}
-      </a>`;
-    });
+    // Hide sources strip
+    document.getElementById('sources-strip').style.display='none';
 
     // Stats
     const statsEl=document.getElementById('stats-row');
     const t=data.fetched_at?new Date(data.fetched_at).toLocaleTimeString('en-GH',{hour:'2-digit',minute:'2-digit'}):'-';
-    statsEl.innerHTML=`<span>${allArticles.length} articles</span> · <span>${data.sources_succeeded||0} of ${data.sources_attempted||7} sources live</span> · <span>Updated ${t}</span>${data.fallback?` · <span style="color:var(--amber);">⚠ Showing cached/fallback articles</span>`:''}`;
+    statsEl.innerHTML=`<span>${allArticles.length} GSE-related articles</span> · <span>Updated ${t}</span>`;
 
     // Category filters
     const cats=['All',...new Set(allArticles.map(a=>a.category).filter(Boolean))];
@@ -137,8 +144,7 @@ async function loadNews(){
   }catch(err){
     document.getElementById('news-grid').innerHTML=`<div class="panel" style="grid-column:1/-1;text-align:center;padding:48px;color:var(--text-dim);">
       <div style="font-size:24px;margin-bottom:12px;">📡</div>
-      Could not load news right now. Visit sources directly:<br><br>
-      ${Object.entries(SOURCE_URLS).map(([s,u])=>`<a href="${u}" target="_blank" style="color:var(--gold-bright);margin:0 8px;">${s}</a>`).join('')}
+      Could not load news right now. Please try again later.
     </div>`;
   }
   btn.disabled=false; btn.textContent='↻ Refresh';
@@ -158,12 +164,11 @@ function renderNews(){
 
   const grid=document.getElementById('news-grid');
   if(filtered.length===0){
-    grid.innerHTML=`<div class="panel" style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-dim);">No articles found.</div>`;
+    grid.innerHTML=`<div class="panel" style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-dim);">No GSE articles found for this category.</div>`;
     return;
   }
 
   grid.innerHTML=filtered.map((a,i)=>{
-    const icon=SOURCE_ICONS[a.source]||'📰';
     if(i===0) return `
       <a class="news-card featured" href="${a.link||'#'}" target="_blank" rel="noopener">
         <div class="fc-text">
@@ -171,11 +176,10 @@ function renderNews(){
           <h3>${a.title}</h3>
           <p>${a.description||''}</p>
           <div class="news-meta">
-            <span class="source-tag">${icon} ${a.source}</span>
             <span>${a.date}</span>
           </div>
         </div>
-        <div class="fc-icon">${icon}</div>
+        <div class="fc-icon">📰</div>
       </a>`;
     return `
       <a class="news-card" href="${a.link||'#'}" target="_blank" rel="noopener">
@@ -183,7 +187,6 @@ function renderNews(){
         <h3>${a.title}</h3>
         <p>${a.description||''}</p>
         <div class="news-meta">
-          <span class="source-tag">${icon} ${a.source}</span>
           <span>${a.date}</span>
         </div>
       </a>`;
