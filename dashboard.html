@@ -1,0 +1,979 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Portfolio — EagleEyE</title>
+<link rel="stylesheet" href="style.css">
+<script>document.documentElement.setAttribute("data-theme",localStorage.getItem("ee_theme")||"dark");</script>
+<style>
+/* ===== DASHBOARD LAYOUT ===== */
+.db-wrap{max-width:1400px;margin:0 auto;padding:20px 24px 60px;}
+.db-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px;}
+.db-title{font-family:var(--font-display);font-size:24px;font-weight:600;}
+.db-grid{display:grid;grid-template-columns:1fr 320px;gap:20px;align-items:start;}
+.db-main{display:flex;flex-direction:column;gap:18px;}
+.db-sidebar{display:flex;flex-direction:column;gap:18px;}
+
+/* ===== SUMMARY STRIP ===== */
+.summary-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+.summary-card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px 16px;}
+.summary-card .lbl{font-size:10.5px;color:var(--text-faint);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;}
+.summary-card .val{font-size:20px;font-weight:700;font-family:var(--font-display);line-height:1;}
+.summary-card .sub{font-size:11.5px;margin-top:5px;}
+.up{color:var(--green-bright);}
+.dn{color:var(--red);}
+
+/* ===== HOLDINGS TABLE ===== */
+.section{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
+.section-head{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border);}
+.section-title{font-size:14px;font-weight:600;}
+.holdings-table{width:100%;border-collapse:collapse;font-size:12.5px;}
+.holdings-table th{padding:9px 14px;text-align:left;font-size:10.5px;color:var(--text-faint);text-transform:uppercase;letter-spacing:0.04em;font-weight:500;background:var(--panel-2);}
+.holdings-table th:not(:first-child){text-align:right;}
+.holdings-table td{padding:11px 14px;border-top:1px solid var(--border-soft);vertical-align:middle;}
+.holdings-table td:not(:first-child){text-align:right;font-family:var(--font-mono);}
+.holdings-table tr:hover td{background:var(--panel-2);}
+.tk-cell .tk{font-size:14px;font-weight:700;}
+.tk-cell .nm{font-size:11px;color:var(--text-dim);margin-top:2px;}
+.pnl-chip{display:inline-block;font-size:11px;padding:2px 8px;border-radius:6px;font-family:var(--font-mono);}
+.pnl-up{background:var(--green-fill);color:var(--green-bright);}
+.pnl-dn{background:var(--red-fill);color:var(--red);}
+.pnl-flat{background:var(--panel-3);color:var(--text-dim);}
+.row-actions{display:flex;gap:5px;justify-content:flex-end;}
+.icon-btn{background:none;border:1px solid var(--border);border-radius:5px;color:var(--text-faint);cursor:pointer;padding:3px 7px;font-size:11px;font-family:var(--font-body);}
+.icon-btn:hover{border-color:var(--text-dim);color:var(--text);}
+.icon-btn.del:hover{border-color:var(--red);color:var(--red);}
+.empty-state{text-align:center;padding:48px 20px;color:var(--text-dim);}
+.empty-icon{font-size:28px;margin-bottom:12px;opacity:0.4;}
+.loading-state{text-align:center;padding:40px;color:var(--text-faint);font-size:13px;}
+.spinner-sm{display:inline-block;width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--gold-bright);border-radius:50%;animation:spin .8s linear infinite;vertical-align:middle;margin-right:8px;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ===== GOAL BAR ===== */
+.goal-section{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:18px;}
+.goal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.goal-track{height:8px;background:var(--panel-3);border-radius:4px;overflow:hidden;margin-bottom:8px;}
+.goal-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--gold-dim),var(--gold-bright));transition:width 1s ease;}
+.goal-meta{display:flex;justify-content:space-between;font-size:11px;color:var(--text-faint);font-family:var(--font-mono);}
+
+/* ===== SECTOR BARS ===== */
+.sector-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;font-size:12px;}
+.sector-name{width:90px;color:var(--text-dim);flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.sector-track{flex:1;height:5px;background:var(--panel-3);border-radius:3px;overflow:hidden;}
+.sector-fill{height:100%;border-radius:3px;}
+.sector-pct{width:38px;text-align:right;font-family:var(--font-mono);font-size:11px;color:var(--text-faint);}
+
+/* ===== PERFORMANCE CHART ===== */
+.chart-box{padding:16px 18px;}
+.chart-canvas-wrap{height:160px;position:relative;}
+
+/* ===== MARKET MOVERS ===== */
+.mover-row{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border-soft);font-size:12.5px;}
+.mover-row:last-child{border-bottom:none;}
+.mover-name{font-family:var(--font-mono);font-weight:600;font-size:13px;}
+.mover-sub{font-size:10.5px;color:var(--text-faint);margin-top:1px;}
+
+/* ===== NEWS SIDEBAR ===== */
+.news-item{padding:12px 0;border-bottom:1px solid var(--border-soft);}
+.news-item:last-child{border-bottom:none;}
+.news-item a{text-decoration:none;color:var(--text);}
+.news-item a:hover .news-title{color:var(--gold-bright);}
+.news-title{font-size:12.5px;line-height:1.45;font-weight:500;margin-bottom:5px;}
+.news-meta{display:flex;justify-content:space-between;font-size:10.5px;color:var(--text-faint);font-family:var(--font-mono);}
+.news-src{color:var(--text-dim);}
+
+/* ===== DIVIDEND SUMMARY ===== */
+.div-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border-soft);font-size:12.5px;}
+.div-row:last-child{border-bottom:none;}
+
+/* ===== MODALS ===== */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:999;padding:20px;opacity:0;pointer-events:none;transition:opacity .2s;}
+.modal-bg.open{opacity:1;pointer-events:auto;}
+.modal-box{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:26px;width:100%;max-width:430px;transform:translateY(10px);transition:transform .2s;}
+.modal-bg.open .modal-box{transform:translateY(0);}
+.modal-title{font-size:17px;font-weight:600;margin-bottom:4px;}
+.modal-sub{font-size:12.5px;color:var(--text-dim);margin-bottom:20px;line-height:1.5;}
+.field{margin-bottom:12px;}
+.field label{font-size:11px;color:var(--text-dim);display:block;margin-bottom:5px;font-weight:500;text-transform:uppercase;letter-spacing:0.04em;}
+.field select,.field input,.field textarea{width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;background:var(--panel-2);color:var(--text);font-family:var(--font-body);}
+.field select:focus,.field input:focus,.field textarea:focus{outline:none;border-color:var(--gold-dim);}
+.field textarea{resize:none;height:90px;line-height:1.5;}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.modal-actions{display:flex;gap:10px;margin-top:18px;}
+.modal-actions .btn{flex:1;}
+.modal-tabs{display:flex;gap:4px;margin-bottom:18px;background:var(--panel-2);padding:3px;border-radius:8px;}
+.modal-tab{flex:1;padding:7px;border-radius:6px;border:none;background:none;color:var(--text-dim);cursor:pointer;font-size:12.5px;font-family:var(--font-body);font-weight:500;transition:all .15s;}
+.modal-tab.active{background:var(--panel);color:var(--text);}
+.err-msg{font-size:12px;color:var(--red);margin-top:8px;display:none;}
+.err-msg.show{display:block;}
+.suc-msg{font-size:12px;color:var(--green-bright);margin-top:8px;display:none;}
+.suc-msg.show{display:block;}
+.import-hint{font-size:11.5px;color:var(--text-faint);line-height:1.65;padding:10px 12px;background:var(--panel-3);border-radius:var(--radius-sm);margin-bottom:12px;}
+
+/* ===== RESPONSIVE ===== */
+@media(max-width:1000px){
+  .db-grid{grid-template-columns:1fr;}
+  .db-sidebar{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+}
+@media(max-width:660px){
+  .summary-strip{grid-template-columns:1fr 1fr;}
+  .db-sidebar{grid-template-columns:1fr;}
+  .holdings-table th:nth-child(3),
+  .holdings-table td:nth-child(3),
+  .holdings-table th:nth-child(4),
+  .holdings-table td:nth-child(4){display:none;}
+}
+</style>
+</head>
+<body>
+<div id="chrome-header"></div>
+
+<!-- ADD HOLDING MODAL -->
+<div class="modal-bg" id="holdingModal">
+  <div class="modal-box">
+    <div class="modal-title" id="modal-title">Add holding</div>
+    <div class="modal-sub" id="modal-sub">Add a stock to your portfolio.</div>
+    <div class="modal-tabs" id="modal-tabs">
+      <button class="modal-tab active" onclick="switchModalTab('manual',this)">Manual entry</button>
+      <button class="modal-tab" onclick="switchModalTab('import',this)">Import from note</button>
+    </div>
+
+    <!-- Manual tab -->
+    <div id="tab-manual">
+      <div class="field">
+        <label>Stock</label>
+        <select id="m-ticker"></select>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Shares</label><input type="number" id="m-shares" placeholder="e.g. 500" min="1"></div>
+        <div class="field"><label>Avg cost (GH₵)</label><input type="number" id="m-cost" placeholder="e.g. 6.50" min="0.01" step="0.01"></div>
+      </div>
+    </div>
+
+    <!-- Import tab -->
+    <div id="tab-import" style="display:none;">
+      <div class="import-hint">
+        📋 Paste the text from your EDC contract note or portfolio statement below. EagleEyE will extract your holdings automatically.
+        <br><br>
+        <strong>Example format:</strong><br>
+        GCB 500 shares @ GH₵18.00<br>
+        MTNGH 1000 shares @ GH₵6.53
+      </div>
+      <div class="field">
+        <label>Paste your contract note text</label>
+        <textarea id="import-text" placeholder="Paste your EDC contract note or holding details here..."></textarea>
+      </div>
+      <button class="btn btn-ghost" onclick="parseImport()" style="width:100%;margin-bottom:10px;">Parse holdings from text</button>
+      <div id="import-preview" style="display:none;">
+        <div style="font-size:11px;color:var(--text-dim);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.04em;">Detected holdings:</div>
+        <div id="import-rows"></div>
+      </div>
+    </div>
+
+    <div class="err-msg" id="modal-err"></div>
+    <div class="suc-msg" id="modal-suc"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-gold" id="modal-save" onclick="saveHolding()">Save holding</button>
+    </div>
+  </div>
+</div>
+
+<!-- DELETE CONFIRM MODAL -->
+<div class="modal-bg" id="deleteModal">
+  <div class="modal-box" style="max-width:360px;">
+    <div class="modal-title">Remove holding?</div>
+    <div class="modal-sub" id="delete-sub">This will permanently remove this stock.</div>
+    <div class="err-msg" id="delete-err"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeDeleteModal()">Cancel</button>
+      <button class="btn" style="flex:1;background:var(--red);color:#fff;border:none;border-radius:var(--radius-sm);cursor:pointer;font-size:13px;font-weight:600;" onclick="confirmDelete()">Remove</button>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT MODAL -->
+<div class="modal-bg" id="editModal">
+  <div class="modal-box" style="max-width:360px;">
+    <div class="modal-title" id="edit-title">Edit holding</div>
+    <div class="modal-sub">Update your shares or average cost.</div>
+    <div class="field-row">
+      <div class="field"><label>Shares</label><input type="number" id="e-shares" min="1"></div>
+      <div class="field"><label>Avg cost (GH₵)</label><input type="number" id="e-cost" min="0.01" step="0.01"></div>
+    </div>
+    <div class="err-msg" id="edit-err"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeEditModal()">Cancel</button>
+      <button class="btn btn-gold" onclick="confirmEdit()">Update</button>
+    </div>
+  </div>
+</div>
+
+<!-- GOAL EDIT MODAL -->
+<div class="modal-bg" id="goalModal">
+  <div class="modal-box" style="max-width:360px;">
+    <div class="modal-title">Set wealth goal</div>
+    <div class="modal-sub">Enter your target portfolio value in GH₵.</div>
+    <div class="field"><label>Target (GH₵)</label><input type="number" id="g-val" placeholder="e.g. 1000000" min="1000" step="1000"></div>
+    <div class="err-msg" id="goal-err"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="document.getElementById('goalModal').classList.remove('open')">Cancel</button>
+      <button class="btn btn-gold" onclick="saveGoal()">Save goal</button>
+    </div>
+  </div>
+</div>
+
+<!-- PAGE -->
+<div class="db-wrap">
+  <div class="db-header">
+    <div style="display:flex;align-items:center;gap:14px;">
+      <a href="index.html" class="btn btn-ghost btn-sm">← Home</a>
+      <div class="db-title">My Portfolio</div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <span id="last-sync" style="font-size:11.5px;color:var(--text-faint);font-family:var(--font-mono);"></span>
+      <button class="btn btn-ghost btn-sm" onclick="printHoldings()">🖨 Print</button>
+      <button class="btn btn-gold btn-sm" onclick="openModal()">+ Add holding</button>
+    </div>
+  </div>
+
+  <!-- Summary strip -->
+  <div class="summary-strip" style="margin-bottom:20px;">
+    <div class="summary-card">
+      <div class="lbl">Portfolio value</div>
+      <div class="val" id="s-value">—</div>
+      <div class="sub" id="s-cost" style="color:var(--text-faint);">—</div>
+    </div>
+    <div class="summary-card">
+      <div class="lbl">Total P&L</div>
+      <div class="val" id="s-pnl">—</div>
+      <div class="sub" id="s-pnl-pct">—</div>
+    </div>
+    <div class="summary-card">
+      <div class="lbl">Day P&L</div>
+      <div class="val" id="s-day">—</div>
+      <div class="sub" id="s-day-sub" style="color:var(--text-faint);">Today's movement</div>
+    </div>
+    <div class="summary-card">
+      <div class="lbl">Market</div>
+      <div class="val" id="s-market-val" style="font-size:16px;">—</div>
+      <div class="sub" id="s-market-sub" style="color:var(--text-faint);">—</div>
+    </div>
+  </div>
+
+  <div class="db-grid">
+    <!-- MAIN COLUMN -->
+    <div class="db-main">
+
+      <!-- Holdings table -->
+      <div class="section">
+        <div class="section-head">
+          <div class="section-title">Holdings <span id="h-count" style="color:var(--text-faint);font-size:12px;"></span></div>
+        </div>
+        <div id="holdings-wrap">
+          <div class="loading-state"><span class="spinner-sm"></span>Loading holdings…</div>
+        </div>
+      </div>
+
+      <!-- Performance chart -->
+      <div class="section">
+        <div class="section-head">
+          <div class="section-title">Performance</div>
+          <div style="display:flex;gap:6px;">
+            <button class="btn btn-ghost btn-sm active-tab" data-r="all" onclick="setRange('all',this)">All</button>
+            <button class="btn btn-ghost btn-sm" data-r="6m" onclick="setRange('6m',this)">6M</button>
+            <button class="btn btn-ghost btn-sm" data-r="3m" onclick="setRange('3m',this)">3M</button>
+          </div>
+        </div>
+        <div class="chart-box">
+          <div class="chart-canvas-wrap">
+            <canvas id="perfChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Dividend summary -->
+      <div class="section">
+        <div class="section-head"><div class="section-title">Estimated annual dividends</div></div>
+        <div style="padding:4px 18px 14px;" id="div-list">
+          <div class="loading-state" style="padding:20px;">Loading…</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- SIDEBAR -->
+    <div class="db-sidebar">
+
+      <!-- Goal -->
+      <div class="goal-section">
+        <div class="goal-head">
+          <div style="font-size:13px;font-weight:600;">Wealth goal</div>
+          <button class="btn btn-ghost btn-sm" onclick="document.getElementById('g-val').value=userGoal;document.getElementById('goalModal').classList.add('open')" style="font-size:11px;">✏ Edit</button>
+        </div>
+        <div style="font-size:12px;color:var(--text-dim);margin-bottom:10px;">
+          <span id="goal-pct" style="color:var(--gold-bright);font-weight:600;">0%</span> of
+          <span id="goal-target">GH₵1,000,000</span>
+        </div>
+        <div class="goal-track"><div class="goal-fill" id="goal-fill" style="width:0%"></div></div>
+        <div class="goal-meta">
+          <span id="goal-current">GH₵0</span>
+          <span id="goal-needed">GH₵0 to go</span>
+        </div>
+      </div>
+
+      <!-- Sector allocation -->
+      <div class="section">
+        <div class="section-head"><div class="section-title">Sector allocation</div></div>
+        <div style="padding:14px 18px;" id="sector-wrap">
+          <div style="font-size:12px;color:var(--text-faint);">Loading…</div>
+        </div>
+      </div>
+
+      <!-- Market movers -->
+      <div class="section">
+        <div class="section-head"><div class="section-title">Market movers</div></div>
+        <div style="padding:4px 18px 14px;" id="movers-wrap">
+          <div style="font-size:12px;color:var(--text-faint);padding:10px 0;">Loading…</div>
+        </div>
+      </div>
+
+      <!-- News -->
+      <div class="section">
+        <div class="section-head">
+          <div class="section-title">Latest news</div>
+          <a href="news.html" style="font-size:11.5px;color:var(--gold-bright);text-decoration:none;">View all →</a>
+        </div>
+        <div style="padding:4px 18px 14px;" id="news-wrap">
+          <div style="font-size:12px;color:var(--text-faint);padding:10px 0;">Loading…</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div id="chrome-footer"></div>
+
+<script src="auth.js"></script>
+<script src="auth-guard.js"></script>
+<script src="data.js"></script>
+<script src="premium-gate.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+mountChrome('dashboard.html');
+
+/* ============================================================
+   STATE
+============================================================ */
+// TOKEN is fetched fresh for each request via getValidToken()
+// to handle automatic JWT refresh
+async function getToken() {
+  return await EE_AUTH.getValidToken() || localStorage.getItem('ee_access_token');
+}
+const PROFILE = JSON.parse(localStorage.getItem('ee_profile')||'{}');
+let userGoal = parseFloat(PROFILE.goal||1000000);
+let liveHoldings = [];
+let editingId = null, deletingId = null;
+let chartInst = null, chartHistory = [];
+
+/* ============================================================
+   INIT — load everything independently so one failure
+   doesn't block another
+============================================================ */
+(async function init(){
+  // Fire all fetches in parallel — nothing blocks anything else
+  fetchGoal();
+  fetchHoldings();
+  fetchHistory();
+  fetchNews();
+  renderMovers();
+  renderMarketStatus();
+  loadLiveData(()=>{
+    renderMovers();
+    if(liveHoldings.length > 0) renderHoldings();
+  });
+})();
+
+/* ============================================================
+   GOAL
+============================================================ */
+async function fetchGoal(){
+  try{
+    const r = await fetch('/api/get-user',{
+      cache:'no-store',
+      headers:{'Authorization':`Bearer ${await getToken()}`}
+    });
+    if(!r.ok) return;
+    const d = await r.json();
+    if(d.profile?.goal) userGoal = parseFloat(d.profile.goal);
+  }catch(e){}
+}
+
+function renderGoal(totVal){
+  const pct = Math.min((totVal/userGoal)*100,100);
+  document.getElementById('goal-pct').textContent = pct.toFixed(1)+'%';
+  document.getElementById('goal-target').textContent = 'GH₵'+fmt(userGoal,0);
+  document.getElementById('goal-current').textContent = 'GH₵'+fmt(totVal,0);
+  document.getElementById('goal-needed').textContent = 'GH₵'+fmt(Math.max(0,userGoal-totVal),0)+' to go';
+  setTimeout(()=>{ document.getElementById('goal-fill').style.width = pct+'%'; },100);
+}
+
+async function saveGoal(){
+  const val = parseFloat(document.getElementById('g-val').value);
+  const errEl = document.getElementById('goal-err');
+  errEl.classList.remove('show');
+  if(!val||val<1000){errEl.textContent='Minimum goal is GH₵1,000.';errEl.classList.add('show');return;}
+  try{
+    const r = await fetch('/api/update-goal',{
+      method:'POST',cache:'no-store',
+      headers:{'Content-Type':'application/json','Authorization':`Bearer ${await getToken()}`},
+      body:JSON.stringify({goal:val})
+    });
+    if(r.ok){
+      userGoal=val;
+      document.getElementById('goalModal').classList.remove('open');
+      renderHoldings();
+    }
+  }catch(e){errEl.textContent='Network error.';errEl.classList.add('show');}
+}
+
+/* ============================================================
+   HOLDINGS — fetch and render
+============================================================ */
+async function fetchHoldings(){
+  try{
+    const r = await fetch('/api/get-holdings',{
+      cache:'no-store',
+      headers:{'Authorization':`Bearer ${await getToken()}`}
+    });
+    const d = await r.json();
+    if(!r.ok){
+      showHoldingsError('API error '+r.status+': '+(d.error||'Unknown'));
+      return;
+    }
+    liveHoldings = d.holdings || [];
+    document.getElementById('last-sync').textContent = 'Synced '+new Date().toLocaleTimeString('en-GH',{hour:'2-digit',minute:'2-digit'});
+    renderHoldings();
+  }catch(err){
+    showHoldingsError('Network error: '+err.message);
+  }
+}
+
+function showHoldingsError(msg){
+  document.getElementById('holdings-wrap').innerHTML = `
+    <div style="padding:32px;text-align:center;color:var(--red);font-size:13px;">
+      ${msg}<br>
+      <button onclick="fetchHoldings()" class="btn btn-ghost btn-sm" style="margin-top:12px;">↻ Retry</button>
+    </div>`;
+}
+
+function renderHoldings(){
+  // Build price map from live data
+  const pm={};
+  gseStocks.forEach(s=>{ pm[s.ticker]=s.price; pm[s.ticker+'_chg']=s.chg||0; });
+  // Ticker aliases — holdings may use old ticker names
+  pm['KASAPREKO'] = pm['KPLC']; pm['KASAPREKO_chg'] = pm['KPLC_chg']||0;
+
+  const rows = liveHoldings.map(h=>{
+    const price = pm[h.ticker]||parseFloat(h.avg_cost)||0;
+    const shares = parseFloat(h.shares)||0;
+    const avg = parseFloat(h.avg_cost)||0;
+    const value = shares*price;
+    const cost = shares*avg;
+    const pnl = cost>0?((value-cost)/cost*100):0;
+    const pnlAbs = value-cost;
+    // Day P&L
+    const chgPct = pm[h.ticker+'_chg']||0;
+    const prevPrice = price/(1+chgPct/100);
+    const dayPnl = (price-prevPrice)*shares;
+    return{...h,price,shares,avg,value,cost,pnl,pnlAbs,dayPnl};
+  }).filter(h=>h.shares>0).sort((a,b)=>b.value-a.value);
+
+  const totVal = rows.reduce((s,h)=>s+h.value,0);
+  const totCost = rows.reduce((s,h)=>s+h.cost,0);
+  const totPnl = totVal-totCost;
+  const totPnlPct = totCost>0?(totPnl/totCost*100):0;
+  const dayPnl = rows.reduce((s,h)=>s+h.dayPnl,0);
+  const dayPnlPct = totVal>dayPnl?(dayPnl/(totVal-dayPnl)*100):0;
+
+  // Summary cards
+  document.getElementById('s-value').textContent = 'GH₵'+fmt(totVal,0);
+  document.getElementById('s-cost').textContent = 'Cost GH₵'+fmt(totCost,0);
+  const pnlEl = document.getElementById('s-pnl');
+  pnlEl.textContent = (totPnl>=0?'+':'')+'GH₵'+fmt(totPnl,0);
+  pnlEl.className = 'val '+(totPnl>=0?'up':'dn');
+  document.getElementById('s-pnl-pct').textContent = (totPnlPct>=0?'+':'')+fmt(totPnlPct,1)+'%';
+  document.getElementById('s-pnl-pct').className = 'sub '+(totPnlPct>=0?'up':'dn');
+  const dayEl = document.getElementById('s-day');
+  dayEl.textContent = (dayPnl>=0?'+':'')+'GH₵'+fmt(Math.abs(dayPnl),0);
+  dayEl.className = 'val '+(dayPnl>=0?'up':'dn');
+  document.getElementById('s-day-sub').textContent = (dayPnlPct>=0?'+':'')+fmt(dayPnlPct,1)+'% today';
+
+  // Market status
+  const ms = getMarketStatus();
+  document.getElementById('s-market-val').textContent = ms.label;
+  document.getElementById('s-market-val').style.color = ms.color;
+  document.getElementById('s-market-sub').textContent = ms.countdown;
+
+  document.getElementById('h-count').textContent = '('+rows.length+' stocks)';
+  renderGoal(totVal);
+  renderSectors(rows, totVal);
+  renderDividends(rows);
+
+  if(rows.length===0){
+    document.getElementById('holdings-wrap').innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">◎</div>
+        <div style="font-size:14px;font-weight:600;margin-bottom:8px;">No holdings yet</div>
+        <div style="font-size:13px;color:var(--text-faint);margin-bottom:16px;">Add your first GSE stock to get started</div>
+        <button class="btn btn-gold btn-sm" onclick="openModal()">+ Add holding</button>
+      </div>`;
+    return;
+  }
+
+  document.getElementById('holdings-wrap').innerHTML = `
+    <table class="holdings-table">
+      <thead><tr>
+        <th>Stock</th>
+        <th>Shares</th>
+        <th>Avg cost</th>
+        <th>Price</th>
+        <th>Value (GH₵)</th>
+        <th>Day P&L</th>
+        <th>Total P&L</th>
+        <th></th>
+      </tr></thead>
+      <tbody id="h-body"></tbody>
+    </table>`;
+
+  const tbody = document.getElementById('h-body');
+  rows.forEach(h=>{
+    const up=h.pnl>=0, dayUp=h.dayPnl>=0;
+    tbody.innerHTML += `<tr>
+      <td><div class="tk-cell"><div class="tk">${h.ticker}</div><div class="nm">${h.name}</div></div></td>
+      <td>${fmt(h.shares,0)}</td>
+      <td>${fmt(h.avg,2)}</td>
+      <td>${fmt(h.price,2)}</td>
+      <td>${fmt(h.value,0)}</td>
+      <td><span class="pnl-chip ${dayUp?'pnl-up':'pnl-dn'}">${dayUp?'+':''}GH₵${fmt(Math.abs(h.dayPnl),0)}</span></td>
+      <td>
+        <span class="pnl-chip ${up?'pnl-up':'pnl-dn'}">${up?'+':''}${fmt(h.pnl,1)}%</span>
+        <div style="font-size:10.5px;color:var(--text-faint);margin-top:3px;">${up?'+':''}GH₵${fmt(h.pnlAbs,0)}</div>
+      </td>
+      <td>
+        <div class="row-actions">
+          <button class="icon-btn" onclick="openEdit('${h.id}','${h.ticker}',${h.shares},${h.avg})">✏</button>
+          <button class="icon-btn del" onclick="openDelete('${h.id}','${h.ticker}')">✕</button>
+        </div>
+      </td>
+    </tr>`;
+  });
+}
+
+/* ============================================================
+   SECTORS
+============================================================ */
+function renderSectors(rows, totVal){
+  const sectors = {};
+  rows.forEach(h=>{ sectors[h.sector]=(sectors[h.sector]||0)+h.value; });
+  const sorted = Object.entries(sectors).sort((a,b)=>b[1]-a[1]);
+  const el = document.getElementById('sector-wrap');
+  if(!sorted.length){ el.innerHTML='<div style="font-size:12px;color:var(--text-faint);">No holdings yet.</div>'; return; }
+  el.innerHTML = sorted.map(([s,v])=>{
+    const pct = totVal>0?(v/totVal*100):0;
+    const col = secColors[s]||'#5A5D57';
+    return `<div class="sector-row">
+      <span class="sector-name">${s}</span>
+      <div class="sector-track"><div class="sector-fill" style="width:${pct}%;background:${col};"></div></div>
+      <span class="sector-pct">${fmt(pct,1)}%</span>
+    </div>`;
+  }).join('');
+  // Risk note
+  if(sorted[0]){
+    const topPct = totVal>0?(sorted[0][1]/totVal*100):0;
+    if(topPct>45) el.innerHTML += `<div style="font-size:11.5px;color:var(--amber);margin-top:10px;line-height:1.5;">⚠ ${sorted[0][0]} is ${fmt(topPct,0)}% of your portfolio — consider diversifying.</div>`;
+  }
+}
+
+/* ============================================================
+   DIVIDENDS
+============================================================ */
+function renderDividends(rows){
+  const pm={};
+  gseStocks.forEach(s=>{ pm[s.ticker]=s; });
+  pm['KASAPREKO'] = pm['KPLC']; // ticker alias
+  const el = document.getElementById('div-list');
+  const divRows = rows.filter(h=>pm[h.ticker]?.yield>0).map(h=>{
+    const annual = (h.value*(pm[h.ticker].yield/100));
+    return {ticker:h.ticker,name:h.name,yield:pm[h.ticker].yield,annual};
+  }).sort((a,b)=>b.annual-a.annual);
+  const total = divRows.reduce((s,d)=>s+d.annual,0);
+  if(!divRows.length){ el.innerHTML='<div style="font-size:12px;color:var(--text-faint);padding:10px 0;">No dividend-paying stocks in your portfolio.</div>'; return; }
+  el.innerHTML = divRows.map(d=>`
+    <div class="div-row">
+      <div><span style="font-family:var(--font-mono);font-weight:700;">${d.ticker}</span> <span style="font-size:11px;color:var(--text-faint);">${d.yield}% yield</span></div>
+      <div style="font-family:var(--font-mono);color:var(--green-bright);">GH₵${fmt(d.annual,0)}/yr</div>
+    </div>`).join('')+
+    `<div class="div-row" style="border-top:1px solid var(--border);margin-top:4px;">
+      <div style="font-weight:600;font-size:12.5px;">Est. total annual</div>
+      <div style="font-family:var(--font-mono);font-weight:700;color:var(--green-bright);">GH₵${fmt(total,0)}</div>
+    </div>`;
+}
+
+/* ============================================================
+   MARKET MOVERS
+============================================================ */
+function renderMovers(){
+  const el = document.getElementById('movers-wrap');
+  const sorted = [...gseStocks].filter(s=>s.chg!==0).sort((a,b)=>Math.abs(b.chg)-Math.abs(a.chg)).slice(0,6);
+  if(!sorted.length){ el.innerHTML='<div style="font-size:12px;color:var(--text-faint);padding:10px 0;">Prices loading…</div>'; return; }
+  const gainers = sorted.filter(s=>s.chg>0).slice(0,3);
+  const losers = sorted.filter(s=>s.chg<0).slice(0,3);
+  const makeRow = (s,up) => `<div class="mover-row">
+    <div><div class="mover-name">${s.ticker}</div><div class="mover-sub">${s.name.substring(0,22)}</div></div>
+    <div style="text-align:right;">
+      <div style="font-family:var(--font-mono);font-size:13px;">GH₵${fmt(s.price,2)}</div>
+      <div class="${up?'up':'dn'}" style="font-size:11.5px;font-family:var(--font-mono);">${up?'+':''}${fmt(s.chg,2)}%</div>
+    </div>
+  </div>`;
+  el.innerHTML = `
+    <div style="font-size:10.5px;color:var(--text-faint);text-transform:uppercase;letter-spacing:0.05em;margin:6px 0 4px;">Top gainers</div>
+    ${gainers.map(s=>makeRow(s,true)).join('')}
+    <div style="font-size:10.5px;color:var(--text-faint);text-transform:uppercase;letter-spacing:0.05em;margin:10px 0 4px;">Top losers</div>
+    ${losers.map(s=>makeRow(s,false)).join('')}`;
+}
+
+/* ============================================================
+   NEWS
+============================================================ */
+async function fetchNews(){
+  try{
+    const r = await fetch('/api/news',{cache:'no-store'});
+    const d = await r.json();
+    const items = (d.articles||[]).slice(0,5);
+    const el = document.getElementById('news-wrap');
+    if(!items.length){ el.innerHTML='<div style="font-size:12px;color:var(--text-faint);padding:10px 0;">No news available.</div>'; return; }
+    el.innerHTML = items.map(a=>`
+      <div class="news-item">
+        <a href="${a.link||'#'}" target="_blank" rel="noopener">
+          <div class="news-title">${a.title}</div>
+          <div class="news-meta">
+            <span class="news-src">${a.source}</span>
+            <span>${a.date}</span>
+          </div>
+        </a>
+      </div>`).join('');
+  }catch(e){}
+}
+
+/* ============================================================
+   PERFORMANCE CHART
+============================================================ */
+async function fetchHistory(){
+  try{
+    const r = await fetch('/api/get-history',{
+      cache:'no-store',
+      headers:{'Authorization':`Bearer ${await getToken()}`}
+    });
+    const d = await r.json();
+    if(r.ok && d.history?.length){
+      chartHistory = d.history.map(h=>({
+        date: new Date(h.snapshot_date).toLocaleDateString('en-GH',{month:'short',year:'2-digit'}),
+        value: parseFloat(h.value)
+      }));
+    } else {
+      chartHistory = history; // fallback to static
+    }
+  }catch(e){ chartHistory = history; }
+  renderChart('all');
+}
+
+function setRange(r,btn){
+  document.querySelectorAll('[data-r]').forEach(b=>b.classList.remove('active-tab'));
+  btn.classList.add('active-tab');
+  renderChart(r);
+}
+
+function renderChart(range){
+  let d = chartHistory;
+  if(range==='6m') d=chartHistory.slice(-6);
+  if(range==='3m') d=chartHistory.slice(-3);
+  if(!d.length) d=history;
+  chartInst?.destroy();
+  const ctx = document.getElementById('perfChart').getContext('2d');
+  chartInst = new Chart(ctx,{
+    type:'line',
+    data:{
+      labels:d.map(x=>x.date),
+      datasets:[{
+        label:'Value',data:d.map(x=>Math.round(x.value)),
+        borderColor:'#E8C158',borderWidth:2.5,
+        pointBackgroundColor:'#E8C158',pointRadius:3,pointHoverRadius:5,
+        fill:true,
+        backgroundColor:(c)=>{const g=c.chart.ctx.createLinearGradient(0,0,0,160);g.addColorStop(0,'rgba(232,193,88,0.22)');g.addColorStop(1,'rgba(232,193,88,0)');return g;},
+        tension:0.38
+      }]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{backgroundColor:'#151E1B',borderColor:'#232E2A',borderWidth:1,titleColor:'#EFEEE8',bodyColor:'#8F9690',callbacks:{label:c=>'GH₵'+c.raw.toLocaleString()}}},
+      scales:{
+        y:{ticks:{color:'#4F5852',font:{size:10},callback:v=>'GH₵'+(v>=1000?Math.round(v/1000)+'k':v)},grid:{color:'#1A2220'}},
+        x:{ticks:{color:'#4F5852',font:{size:10}},grid:{display:false}}
+      }
+    }
+  });
+}
+
+/* ============================================================
+   MARKET STATUS
+============================================================ */
+function renderMarketStatus(){
+  const ms = getMarketStatus();
+  document.getElementById('s-market-val').textContent = ms.label;
+  document.getElementById('s-market-val').style.color = ms.color;
+  document.getElementById('s-market-sub').textContent = ms.countdown;
+  setTimeout(renderMarketStatus, 60000);
+}
+
+/* ============================================================
+   ADD HOLDING MODAL
+============================================================ */
+// Populate ticker dropdown
+const tickerSel = document.getElementById('m-ticker');
+tickerSel.innerHTML = '<option value="">Select a stock…</option>';
+gseStocks.forEach(s=>{ tickerSel.innerHTML+=`<option value="${s.ticker}" data-name="${s.name}" data-sector="${s.sector}">${s.ticker} — ${s.name}</option>`; });
+
+function openModal(){
+  tickerSel.value='';
+  document.getElementById('m-shares').value='';
+  document.getElementById('m-cost').value='';
+  document.getElementById('modal-err').classList.remove('show');
+  document.getElementById('modal-suc').classList.remove('show');
+  document.getElementById('import-text').value='';
+  document.getElementById('import-preview').style.display='none';
+  document.getElementById('holdingModal').classList.add('open');
+}
+function closeModal(){ document.getElementById('holdingModal').classList.remove('open'); }
+document.getElementById('holdingModal').addEventListener('click',e=>{ if(e.target===e.currentTarget) closeModal(); });
+
+function switchModalTab(tab, btn){
+  document.querySelectorAll('.modal-tab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tab-manual').style.display = tab==='manual'?'block':'none';
+  document.getElementById('tab-import').style.display = tab==='import'?'block':'none';
+  document.getElementById('modal-save').style.display = tab==='manual'?'block':'none';
+}
+
+async function saveHolding(){
+  const ticker = tickerSel.value;
+  const shares = document.getElementById('m-shares').value;
+  const cost   = document.getElementById('m-cost').value;
+  const errEl  = document.getElementById('modal-err');
+  const sucEl  = document.getElementById('modal-suc');
+  errEl.classList.remove('show'); sucEl.classList.remove('show');
+  if(!ticker){errEl.textContent='Please select a stock.';errEl.classList.add('show');return;}
+  if(!shares||parseFloat(shares)<=0){errEl.textContent='Enter a valid number of shares.';errEl.classList.add('show');return;}
+  if(!cost||parseFloat(cost)<=0){errEl.textContent='Enter a valid average cost.';errEl.classList.add('show');return;}
+  const btn = document.getElementById('modal-save');
+  btn.disabled=true; btn.textContent='Saving…';
+  const opt = tickerSel.options[tickerSel.selectedIndex];
+  try{
+    const r = await fetch('/api/add-holding',{
+      method:'POST',cache:'no-store',
+      headers:{'Content-Type':'application/json','Authorization':`Bearer ${await getToken()}`},
+      body:JSON.stringify({ticker,name:opt.dataset.name,sector:opt.dataset.sector,shares:parseFloat(shares),avg_cost:parseFloat(cost)})
+    });
+    const d = await r.json();
+    if(!r.ok){errEl.textContent=d.error||'Could not save.';errEl.classList.add('show');}
+    else{sucEl.textContent=d.action==='updated'?ticker+' updated!':ticker+' added!';sucEl.classList.add('show');setTimeout(()=>{closeModal();fetchHoldings();},900);}
+  }catch(e){errEl.textContent='Network error.';errEl.classList.add('show');}
+  btn.disabled=false; btn.textContent='Save holding';
+}
+
+/* ============================================================
+   IMPORT FROM CONTRACT NOTE
+============================================================ */
+function parseImport(){
+  const text = document.getElementById('import-text').value;
+  if(!text.trim()){return;}
+  // Build ticker lookup map
+  const tickerMap={};
+  gseStocks.forEach(s=>{
+    tickerMap[s.ticker]=s;
+    // also match by partial name
+    tickerMap[s.name.split(' ')[0].toUpperCase()]=s;
+  });
+  // Patterns: "GCB 500 shares @ GH₵18.00" or "GCB 500 18.00" or "500 GCB 18.00"
+  const patterns = [
+    /([A-Z]{2,10})\s+(\d+[\d,]*)\s+(?:shares?\s*@?\s*)?(?:GH[C₵]?\s*)?(\d+\.?\d*)/gi,
+    /(\d+[\d,]*)\s+(?:shares?\s+of\s+)?([A-Z]{2,10})\s+(?:@?\s*)?(?:GH[C₵]?\s*)?(\d+\.?\d*)/gi,
+  ];
+  const detected = {};
+  for(const pat of patterns){
+    let m;
+    while((m=pat.exec(text))!==null){
+      let ticker, shares, price;
+      if(isNaN(m[1][0])){ ticker=m[1].toUpperCase(); shares=parseFloat(m[2].replace(/,/g,'')); price=parseFloat(m[3]); }
+      else { shares=parseFloat(m[1].replace(/,/g,'')); ticker=m[2].toUpperCase(); price=parseFloat(m[3]); }
+      const stock = tickerMap[ticker];
+      if(stock && shares>0 && price>0){
+        detected[stock.ticker]={ticker:stock.ticker,name:stock.name,sector:stock.sector,shares,price};
+      }
+    }
+  }
+  const rows = Object.values(detected);
+  const preview = document.getElementById('import-preview');
+  const rowsEl = document.getElementById('import-rows');
+  if(!rows.length){
+    rowsEl.innerHTML='<div style="font-size:12px;color:var(--red);margin-bottom:8px;">No holdings detected. Please check the format and try again.</div>';
+    preview.style.display='block';
+    return;
+  }
+  rowsEl.innerHTML = rows.map((r,i)=>`
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;background:var(--panel-2);border-radius:6px;margin-bottom:6px;font-size:12.5px;">
+      <span style="font-family:var(--font-mono);font-weight:700;">${r.ticker}</span>
+      <span style="color:var(--text-dim);">${fmt(r.shares,0)} shares</span>
+      <span style="font-family:var(--font-mono);">@ GH₵${fmt(r.price,2)}</span>
+      <button class="btn btn-gold btn-sm" style="font-size:11px;padding:4px 10px;" onclick="importSingle(${i})">Import</button>
+    </div>`).join('');
+  rowsEl.innerHTML += `<button class="btn btn-gold" style="width:100%;margin-top:8px;" onclick="importAll()">Import all ${rows.length} holdings</button>`;
+  preview.style.display='block';
+  window._importRows = rows;
+}
+
+async function importSingle(idx){
+  const h = window._importRows[idx];
+  await importHolding(h);
+  fetchHoldings();
+  closeModal();
+}
+
+async function importAll(){
+  const btn = event.target;
+  btn.disabled=true; btn.textContent='Importing…';
+  for(const h of window._importRows){ await importHolding(h); }
+  fetchHoldings();
+  closeModal();
+}
+
+async function importHolding(h){
+  try{
+    await fetch('/api/add-holding',{
+      method:'POST',cache:'no-store',
+      headers:{'Content-Type':'application/json','Authorization':`Bearer ${await getToken()}`},
+      body:JSON.stringify({ticker:h.ticker,name:h.name,sector:h.sector,shares:h.shares,avg_cost:h.price})
+    });
+  }catch(e){}
+}
+
+/* ============================================================
+   EDIT HOLDING
+============================================================ */
+function openEdit(id,ticker,shares,avg){
+  editingId=id;
+  document.getElementById('edit-title').textContent='Edit '+ticker;
+  document.getElementById('e-shares').value=shares;
+  document.getElementById('e-cost').value=avg;
+  document.getElementById('edit-err').classList.remove('show');
+  document.getElementById('editModal').classList.add('open');
+}
+function closeEditModal(){ document.getElementById('editModal').classList.remove('open'); }
+document.getElementById('editModal').addEventListener('click',e=>{ if(e.target===e.currentTarget) closeEditModal(); });
+
+async function confirmEdit(){
+  const shares = document.getElementById('e-shares').value;
+  const cost   = document.getElementById('e-cost').value;
+  const errEl  = document.getElementById('edit-err');
+  errEl.classList.remove('show');
+  if(!shares||parseFloat(shares)<=0){errEl.textContent='Enter valid shares.';errEl.classList.add('show');return;}
+  if(!cost||parseFloat(cost)<=0){errEl.textContent='Enter valid cost.';errEl.classList.add('show');return;}
+  try{
+    const r = await fetch('/api/update-holding',{
+      method:'POST',cache:'no-store',
+      headers:{'Content-Type':'application/json','Authorization':`Bearer ${await getToken()}`},
+      body:JSON.stringify({holding_id:editingId,shares:parseFloat(shares),avg_cost:parseFloat(cost)})
+    });
+    if(r.ok){ closeEditModal(); fetchHoldings(); }
+    else{ const d=await r.json(); errEl.textContent=d.error||'Error.'; errEl.classList.add('show'); }
+  }catch(e){errEl.textContent='Network error.';errEl.classList.add('show');}
+}
+
+/* ============================================================
+   DELETE HOLDING
+============================================================ */
+function openDelete(id,ticker){
+  deletingId=id;
+  document.getElementById('delete-sub').textContent='This will remove '+ticker+' from your portfolio.';
+  document.getElementById('delete-err').classList.remove('show');
+  document.getElementById('deleteModal').classList.add('open');
+}
+function closeDeleteModal(){ document.getElementById('deleteModal').classList.remove('open'); }
+document.getElementById('deleteModal').addEventListener('click',e=>{ if(e.target===e.currentTarget) closeDeleteModal(); });
+
+async function confirmDelete(){
+  const errEl = document.getElementById('delete-err');
+  try{
+    const r = await fetch('/api/delete-holding',{
+      method:'DELETE',cache:'no-store',
+      headers:{'Content-Type':'application/json','Authorization':`Bearer ${await getToken()}`},
+      body:JSON.stringify({holding_id:deletingId})
+    });
+    if(r.ok){ closeDeleteModal(); fetchHoldings(); }
+    else{ const d=await r.json(); errEl.textContent=d.error||'Error.'; errEl.classList.add('show'); }
+  }catch(e){errEl.textContent='Network error.';errEl.classList.add('show');}
+}
+
+/* ============================================================
+   PRINT
+============================================================ */
+function printHoldings(){
+  const pm={};
+  gseStocks.forEach(s=>{ pm[s.ticker]=s.price; });
+  pm['KASAPREKO'] = pm['KPLC']; // ticker alias
+  const rows = liveHoldings.map(h=>{
+    const price=pm[h.ticker]||parseFloat(h.avg_cost)||0;
+    const shares=parseFloat(h.shares)||0, avg=parseFloat(h.avg_cost)||0;
+    const value=shares*price, cost=shares*avg, pnl=cost>0?((value-cost)/cost*100):0, pnlAbs=value-cost;
+    return{...h,price,shares,avg,value,cost,pnl,pnlAbs};
+  }).filter(h=>h.shares>0).sort((a,b)=>b.value-a.value);
+  const totVal=rows.reduce((s,h)=>s+h.value,0);
+  const totCost=rows.reduce((s,h)=>s+h.cost,0);
+  const totPnl=totVal-totCost, totPnlPct=totCost>0?(totPnl/totCost*100):0;
+  const name = (PROFILE.firstName||'')+' '+(PROFILE.lastName||'');
+  const win=window.open('','_blank','width=900,height=700');
+  win.document.write(`<!DOCTYPE html><html><head><title>EagleEyE Portfolio</title>
+  <style>*{box-sizing:border-box;margin:0;padding:0;}body{font-family:Arial,sans-serif;font-size:12px;padding:32px;color:#1A1A14;}
+  .hdr{display:flex;justify-content:space-between;padding-bottom:16px;border-bottom:2px solid #D4A537;margin-bottom:20px;}
+  table{width:100%;border-collapse:collapse;margin-bottom:20px;}
+  th{background:#D4A537;color:#1A1300;padding:8px 10px;text-align:left;font-size:11px;text-transform:uppercase;}
+  th:not(:first-child){text-align:right;}
+  td{padding:9px 10px;border-bottom:1px solid #E8E7E1;font-size:11.5px;}
+  td:not(:first-child){text-align:right;font-family:monospace;}
+  tr:nth-child(even){background:#F5F5F0;}
+  tfoot td{font-weight:700;border-top:2px solid #D4A537;padding-top:10px;}
+  .up{color:#0D6E47;}.dn{color:#C0392B;}
+  .footer{font-size:10px;color:#9A9890;display:flex;justify-content:space-between;padding-top:14px;border-top:1px solid #E8E7E1;}
+  </style></head><body>
+  <div class="hdr"><div><strong style="font-size:18px;">EagleEyE</strong><br><span style="font-size:11px;color:#5A5952;">Ghana's Investor Intelligence Platform</span></div>
+  <div style="text-align:right;font-size:11px;color:#5A5952;"><strong>Portfolio Report</strong><br>${name.trim()}<br>${new Date().toLocaleDateString('en-GH',{day:'numeric',month:'long',year:'numeric'})}</div></div>
+  <table><thead><tr><th>Stock</th><th>Shares</th><th>Avg Cost</th><th>Price</th><th>Value</th><th>P&L %</th><th>P&L GH₵</th></tr></thead>
+  <tbody>${rows.map(h=>`<tr><td><strong>${h.ticker}</strong><br><small>${h.name}</small></td><td>${fmt(h.shares,0)}</td><td>${fmt(h.avg,2)}</td><td>${fmt(h.price,2)}</td><td>${fmt(h.value,0)}</td><td class="${h.pnl>=0?'up':'dn'}">${h.pnl>=0?'+':''}${fmt(h.pnl,1)}%</td><td class="${h.pnl>=0?'up':'dn'}">${h.pnlAbs>=0?'+':''}GH₵${fmt(h.pnlAbs,0)}</td></tr>`).join('')}</tbody>
+  <tfoot><tr><td colspan="4">TOTAL (${rows.length} holdings)</td><td>GH₵${fmt(totVal,0)}</td><td class="${totPnl>=0?'up':'dn'}">${totPnlPct>=0?'+':''}${fmt(totPnlPct,1)}%</td><td class="${totPnl>=0?'up':'dn'}">${totPnl>=0?'+':''}GH₵${fmt(totPnl,0)}</td></tr></tfoot></table>
+  <div class="footer"><span>eagleeyeinvests.com</span><span>Prices: kwayisi GSE-API · Not investment advice</span></div>
+  <scr`+'ipt>window.onload=function(){window.print();}<'+`/scr`+'ipt></body></html>');
+  win.document.close();
+}
+</script>
+<script>
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('/sw.js')
+      .catch(e=>console.log('[SW]',e));
+  });
+}
+</script>
+</body>
+</html>

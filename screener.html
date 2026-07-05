@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#D4A537">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="EagleEyE">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+<title>Stock Screener — EagleEyE</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="chrome-header"></div>
+<div class="wrap">
+  <div style="margin:28px 0 20px;display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:10px;">
+    <div>
+      <div style="font-family:var(--font-display);font-size:26px;font-weight:600;">Stock Screener</div>
+      <div style="font-size:13px;color:var(--text-dim);margin-top:4px;">Filter all 38 GSE-listed stocks · Live via kwayisi GSE-API</div>
+    </div>
+    <button class="btn btn-ghost btn-sm" onclick="refresh()" id="refreshBtn">↻ Refresh prices</button>
+  </div>
+
+  <div class="panel mb">
+    <div class="panel-head"><div class="panel-title">Filters</div></div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;margin-bottom:16px;">
+      <div>
+        <div style="font-size:11px;color:var(--text-faint);margin-bottom:7px;text-transform:uppercase;letter-spacing:0.05em;">Search</div>
+        <input class="screener-search" id="s-search" placeholder="Ticker or name…" oninput="applyFilters()" style="width:100%;">
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text-faint);margin-bottom:7px;text-transform:uppercase;letter-spacing:0.05em;">Sector</div>
+        <select class="screener-search" id="s-sector" onchange="applyFilters()" style="width:100%;"></select>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text-faint);margin-bottom:7px;text-transform:uppercase;letter-spacing:0.05em;">Price range (GH₵)</div>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <input class="screener-search" id="s-pmin" type="number" placeholder="Min" oninput="applyFilters()" style="width:50%;">
+          <span style="color:var(--text-faint);font-size:12px;">–</span>
+          <input class="screener-search" id="s-pmax" type="number" placeholder="Max" oninput="applyFilters()" style="width:50%;">
+        </div>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text-faint);margin-bottom:7px;text-transform:uppercase;letter-spacing:0.05em;">Min dividend yield (%)</div>
+        <input class="screener-search" id="s-yield" type="number" placeholder="e.g. 5" oninput="applyFilters()" style="width:100%;">
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text-faint);margin-bottom:7px;text-transform:uppercase;letter-spacing:0.05em;">Performance</div>
+        <select class="screener-search" id="s-perf" onchange="applyFilters()" style="width:100%;">
+          <option value="">All</option>
+          <option value="up">Gainers only</option>
+          <option value="down">Losers only</option>
+          <option value="flat">Unchanged</option>
+        </select>
+      </div>
+      <div style="display:flex;align-items:flex-end;">
+        <button class="btn btn-ghost btn-sm" onclick="resetFilters()" style="width:100%;">Reset filters</button>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;" id="quick-filters">
+      <button class="filter-chip" onclick="quickFilter(this,'banking')">Banking</button>
+      <button class="filter-chip" onclick="quickFilter(this,'consumer')">Consumer Goods</button>
+      <button class="filter-chip" onclick="quickFilter(this,'energy')">Energy</button>
+      <button class="filter-chip" onclick="quickFilter(this,'mining')">Mining</button>
+      <button class="filter-chip" onclick="quickFilter(this,'insurance')">Insurance</button>
+      <button class="filter-chip" onclick="quickFilter(this,'highyield')">Yield &gt; 5%</button>
+      <button class="filter-chip" onclick="quickFilter(this,'gainers')">Today's gainers</button>
+      <button class="filter-chip" onclick="quickFilter(this,'cheap')">Price &lt; GH₵1</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head">
+      <div class="panel-title">Results <span class="sub" id="result-count"></span></div>
+      <select class="screener-search" id="s-sort" onchange="applyFilters()" style="width:140px;font-size:11px;padding:5px 8px;">
+        <option value="mktcap">Market cap</option>
+        <option value="price">Price ↓</option>
+        <option value="chg">Change %</option>
+        <option value="yield">Yield ↓</option>
+        <option value="az">A–Z</option>
+      </select>
+    </div>
+    <table>
+      <thead><tr><th>Ticker</th><th>Company</th><th>Sector</th><th>Price (GH₵)</th><th>Change</th><th>Volume</th><th>Est. yield</th><th>In my portfolio</th></tr></thead>
+      <tbody id="screen-body"></tbody>
+    </table>
+  </div>
+</div>
+<div id="chrome-footer"></div>
+<script src="auth.js"></script>
+<script src="auth-guard.js"></script>
+<script src="data.js"></script>
+<script src="premium-gate.js"></script>
+<script>
+mountChrome('screener.html');
+if(!requirePremium('Stock Screener')) throw new Error('not premium');
+const myTickers = new Set(holdings.map(h=>h.ticker));
+
+const sectors=[...new Set(gseStocks.map(s=>s.sector))].sort();
+const secSel=document.getElementById('s-sector');
+secSel.innerHTML='<option value="">All sectors</option>';
+sectors.forEach(s=>secSel.innerHTML+=`<option value="${s}">${s}</option>`);
+
+function parseMktCap(str){ if(!str||str==='—') return 0; const n=parseFloat(str.replace(/[^0-9.]/g,'')); return str.includes('B')?n*1000:n; }
+
+function applyFilters(){
+  const q=(document.getElementById('s-search').value||'').toLowerCase();
+  const sec=document.getElementById('s-sector').value;
+  const pmin=parseFloat(document.getElementById('s-pmin').value)||0;
+  const pmax=parseFloat(document.getElementById('s-pmax').value)||Infinity;
+  const minY=parseFloat(document.getElementById('s-yield').value)||0;
+  const perf=document.getElementById('s-perf').value;
+  const sort=document.getElementById('s-sort').value;
+  let results=gseStocks.filter(s=>{
+    if(q&&!s.ticker.toLowerCase().includes(q)&&!s.name.toLowerCase().includes(q)) return false;
+    if(sec&&s.sector!==sec) return false;
+    if(s.price<pmin||s.price>pmax) return false;
+    if(s.yield<minY) return false;
+    if(perf==='up'&&s.chg<=0) return false;
+    if(perf==='down'&&s.chg>=0) return false;
+    if(perf==='flat'&&s.chg!==0) return false;
+    return true;
+  });
+  results.sort((a,b)=>sort==='price'?b.price-a.price:sort==='chg'?b.chg-a.chg:sort==='yield'?b.yield-a.yield:sort==='az'?a.name.localeCompare(b.name):parseMktCap(b.mktCap)-parseMktCap(a.mktCap));
+  const sb=document.getElementById('screen-body');
+  sb.innerHTML='';
+  results.forEach(s=>{
+    const up=s.chg>0,flat=s.chg===0,owned=myTickers.has(s.ticker);
+    sb.innerHTML+=`<tr>
+      <td class="tk">${s.ticker}</td>
+      <td><div class="tk-name" style="font-size:12.5px;color:var(--text);">${s.name}</div></td>
+      <td><span style="font-size:11px;color:var(--text-faint);">${s.sector}</span></td>
+      <td>${fmt(s.price,2)}</td>
+      <td><span class="chip ${up?'chip-up':flat?'chip-neu':'chip-down'}">${up?'+':''}${flat?'—':fmt(s.chg,2)+'%'}</span></td>
+      <td style="color:var(--text-faint);font-size:11.5px;">${s.volume>0?fmt(s.volume,0):'—'}</td>
+      <td>${s.yield>0?`<span class="chip chip-up">${fmt(s.yield,1)}%</span>`:'—'}</td>
+      <td>${owned?`<span class="chip chip-gold">✓ Owned</span>`:'<span style="color:var(--text-faint);font-size:11px;">—</span>'}</td>
+    </tr>`;
+  });
+  document.getElementById('result-count').textContent='('+results.length+' stocks)';
+}
+
+function quickFilter(btn,key){
+  const isActive=btn.classList.contains('active');
+  document.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active'));
+  resetFilters(true);
+  if(!isActive){
+    btn.classList.add('active');
+    if(key==='banking')  document.getElementById('s-sector').value='Banking';
+    if(key==='consumer') document.getElementById('s-sector').value='Consumer Goods';
+    if(key==='energy')   document.getElementById('s-sector').value='Energy';
+    if(key==='mining')   document.getElementById('s-sector').value='Mining';
+    if(key==='insurance')document.getElementById('s-sector').value='Insurance';
+    if(key==='highyield')document.getElementById('s-yield').value='5';
+    if(key==='gainers')  document.getElementById('s-perf').value='up';
+    if(key==='cheap')    document.getElementById('s-pmax').value='1';
+  }
+  applyFilters();
+}
+
+function resetFilters(silent){
+  ['s-search','s-pmin','s-pmax','s-yield'].forEach(id=>document.getElementById(id).value='');
+  ['s-sector','s-perf'].forEach(id=>document.getElementById(id).value='');
+  if(!silent){ document.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active')); applyFilters(); }
+}
+
+function refresh(){
+  const btn=document.getElementById('refreshBtn');
+  btn.textContent='↻ Refreshing…'; btn.disabled=true;
+  loadLiveData(()=>{ applyFilters(); btn.textContent='↻ Refresh prices'; btn.disabled=false; });
+}
+
+// Load with static data first, then fetch live
+applyFilters();
+loadLiveData(applyFilters);
+</script>
+  <script>
+    if('serviceWorker' in navigator){
+      window.addEventListener('load', ()=>{
+        navigator.serviceWorker.register('/sw.js')
+          .then(r=>console.log('[PWA] SW registered:', r.scope))
+          .catch(e=>console.log('[PWA] SW error:', e));
+      });
+    }
+  </script>
+</body></html>

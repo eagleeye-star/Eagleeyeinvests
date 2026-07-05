@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#D4A537">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="EagleEyE">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+<title>Market Centre — EagleEyE</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="chrome-header"></div>
+<div class="wrap">
+  <div style="margin:28px 0 20px;display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:10px;">
+    <div>
+      <div style="font-family:var(--font-display);font-size:26px;font-weight:600;">Market Centre</div>
+      <div style="font-size:13px;color:var(--text-dim);margin-top:4px;">All 38 GSE-listed stocks · Live via kwayisi GSE-API</div>
+    </div>
+    <button class="btn btn-ghost btn-sm" onclick="refresh()" id="refreshBtn">↻ Refresh</button>
+  </div>
+
+  <div class="snapshot-strip mb" id="snapStrip">
+    <div class="snap-cell"><div class="lbl">GSE-CI</div><div class="val" id="sGSECI">—</div><div class="sub" id="sGSECIsub">Loading…</div></div>
+    <div class="snap-cell"><div class="lbl">Market Cap</div><div class="val">GHS 285B</div><div class="sub">Jun 2026</div></div>
+    <div class="snap-cell"><div class="lbl">Top gainer</div><div class="val" id="sGainer" style="color:var(--green-bright);">—</div><div class="sub" id="sGainerSub">—</div></div>
+    <div class="snap-cell"><div class="lbl">Top loser</div><div class="val" id="sLoser" style="color:var(--red);">—</div><div class="sub" id="sLoserSub">—</div></div>
+    <div class="snap-cell"><div class="lbl">Most active</div><div class="val" id="sMostActive">—</div><div class="sub" id="sMostActiveSub">—</div></div>
+  </div>
+
+  <div class="grid-2-eq mb">
+    <div class="panel"><div class="panel-head"><div class="panel-title">Top gainers</div></div><table><thead><tr><th>Stock</th><th>Price</th><th>Change</th><th>Volume</th></tr></thead><tbody id="gainers"></tbody></table></div>
+    <div class="panel"><div class="panel-head"><div class="panel-title">Top losers</div></div><table><thead><tr><th>Stock</th><th>Price</th><th>Change</th><th>Volume</th></tr></thead><tbody id="losers"></tbody></table></div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head">
+      <div class="panel-title">All GSE listings <span class="sub" id="mkt-count"></span></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <input class="screener-search" id="mkt-search" placeholder="Search ticker or name…" oninput="filterMkt()">
+        <select class="screener-search" id="mkt-sector" onchange="filterMkt()" style="width:160px;"></select>
+      </div>
+    </div>
+    <table>
+      <thead><tr><th>Ticker</th><th>Company</th><th>Sector</th><th>Price (GH₵)</th><th>Change</th><th>Volume</th><th>Market cap</th></tr></thead>
+      <tbody id="market-body"></tbody>
+    </table>
+  </div>
+</div>
+<div id="chrome-footer"></div>
+<script src="auth.js"></script>
+<script src="auth-guard.js"></script>
+<script src="data.js"></script>
+<script>
+mountChrome('market.html');
+
+// Populate sector filter
+const sectors=[...new Set(gseStocks.map(s=>s.sector))].sort();
+const secSel=document.getElementById('mkt-sector');
+secSel.innerHTML='<option value="">All sectors</option>';
+sectors.forEach(s=>secSel.innerHTML+=`<option value="${s}">${s}</option>`);
+
+function updateSnapshot(){
+  const sorted=[...gseStocks].sort((a,b)=>b.chg-a.chg);
+  const gainers=sorted.filter(s=>s.chg>0), losers=sorted.filter(s=>s.chg<0);
+  const topG=gainers[0], topL=losers[losers.length-1]||losers[0];
+  const mostActive=[...gseStocks].sort((a,b)=>b.volume-a.volume)[0];
+  if(topG){ document.getElementById('sGainer').textContent=topG.ticker+' +'+fmt(topG.chg,2)+'%'; document.getElementById('sGainerSub').textContent='GHS '+fmt(topG.price,2); }
+  if(topL){ document.getElementById('sLoser').textContent=topL.ticker+' '+fmt(topL.chg,2)+'%'; document.getElementById('sLoserSub').textContent='GHS '+fmt(topL.price,2); }
+  if(mostActive&&mostActive.volume>0){ document.getElementById('sMostActive').textContent=mostActive.ticker; document.getElementById('sMostActiveSub').textContent=fmt(mostActive.volume,0)+' shares'; }
+  document.getElementById('sGSECI').textContent='14,647';
+  document.getElementById('sGSECIsub').style.color='var(--green-bright)';
+  document.getElementById('sGSECIsub').textContent='▲ +0.30%';
+}
+
+function renderGainersLosers(){
+  const sorted=[...gseStocks].sort((a,b)=>b.chg-a.chg);
+  const g=document.getElementById('gainers'), l=document.getElementById('losers');
+  g.innerHTML=''; l.innerHTML='';
+  sorted.filter(s=>s.chg>0).slice(0,5).forEach(s=>{
+    g.innerHTML+=`<tr><td><div class="tk">${s.ticker}</div><div class="tk-name">${s.name}</div></td><td>${fmt(s.price,2)}</td><td><span class="chip chip-up">+${fmt(s.chg,2)}%</span></td><td style="color:var(--text-faint);font-size:11px;">${s.volume>0?fmt(s.volume,0):'—'}</td></tr>`;
+  });
+  sorted.filter(s=>s.chg<0).reverse().slice(0,5).forEach(s=>{
+    l.innerHTML+=`<tr><td><div class="tk">${s.ticker}</div><div class="tk-name">${s.name}</div></td><td>${fmt(s.price,2)}</td><td><span class="chip chip-down">${fmt(s.chg,2)}%</span></td><td style="color:var(--text-faint);font-size:11px;">${s.volume>0?fmt(s.volume,0):'—'}</td></tr>`;
+  });
+}
+
+function renderMkt(stocks){
+  const mb=document.getElementById('market-body');
+  mb.innerHTML='';
+  stocks.forEach(s=>{
+    const up=s.chg>0,flat=s.chg===0;
+    mb.innerHTML+=`<tr>
+      <td class="tk">${s.ticker}</td>
+      <td><div class="tk-name" style="font-size:12.5px;color:var(--text);">${s.name}</div></td>
+      <td><span style="font-size:11px;color:var(--text-faint);">${s.sector}</span></td>
+      <td>${fmt(s.price,2)}</td>
+      <td><span class="chip ${up?'chip-up':flat?'chip-neu':'chip-down'}">${up?'+':''}${flat?'—':fmt(s.chg,2)+'%'}</span></td>
+      <td style="color:var(--text-faint);font-size:11.5px;">${s.volume>0?fmt(s.volume,0):'—'}</td>
+      <td style="color:var(--text-faint);font-size:11.5px;">${s.mktCap}</td>
+    </tr>`;
+  });
+  document.getElementById('mkt-count').textContent='('+stocks.length+' companies)';
+}
+
+function filterMkt(){
+  const q=(document.getElementById('mkt-search').value||'').toLowerCase();
+  const sec=document.getElementById('mkt-sector').value;
+  renderMkt(gseStocks.filter(s=>{
+    if(q&&!s.ticker.toLowerCase().includes(q)&&!s.name.toLowerCase().includes(q)) return false;
+    if(sec&&s.sector!==sec) return false;
+    return true;
+  }));
+}
+
+function renderAll(){
+  updateSnapshot();
+  renderGainersLosers();
+  filterMkt();
+}
+
+function refresh(){
+  const btn=document.getElementById('refreshBtn');
+  btn.textContent='↻ Refreshing…';
+  btn.disabled=true;
+  loadLiveData(()=>{
+    renderAll();
+    btn.textContent='↻ Refresh';
+    btn.disabled=false;
+  });
+}
+
+// On page load: render with static data immediately, then fetch live
+renderAll();
+loadLiveData(renderAll);
+</script>
+  <script>
+    if('serviceWorker' in navigator){
+      window.addEventListener('load', ()=>{
+        navigator.serviceWorker.register('/sw.js')
+          .then(r=>console.log('[PWA] SW registered:', r.scope))
+          .catch(e=>console.log('[PWA] SW error:', e));
+      });
+    }
+  </script>
+</body></html>
