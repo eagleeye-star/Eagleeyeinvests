@@ -134,28 +134,23 @@ async function doLogin(){
   btn.disabled=true;
   btn.innerHTML='<span class="spinner"></span>Logging in…';
 
+  const SB_URL  = 'https://jyhamtniuhlsbwcdfspa.supabase.co';
+  const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp5aGFtdG5pdWhsc2J3Y2Rmc3BhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxNjE1MTgsImV4cCI6MjA5NzczNzUxOH0.1nT-wpRjjAIpgUk_BDTlu3z4Cvuz_G0nKX9l65cwpF0';
+
   try{
-    const res=await fetch('/api/login',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({email,password}),
+    // Step 1: Sign in with Supabase directly
+    const res = await fetch(`${SB_URL}/auth/v1/token?grant_type=password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'apikey': SB_ANON },
+      body: JSON.stringify({ email, password }),
     });
-
-    // If 404 - functions not deployed yet
-    if(res.status===404){
-      showAlert('login-error','Backend functions are not deployed yet. Please redeploy the site with the netlify/functions folder included.');
-      btn.disabled=false; btn.textContent='Log in to EagleEyE';
-      return;
-    }
-
-    const data=await res.json();
+    const data = await res.json();
 
     if(!res.ok){
-      // Give specific helpful messages for common errors
-      const msg = data.error || 'Login failed. Please try again.';
-      if(msg.toLowerCase().includes('verify') || msg.toLowerCase().includes('confirm')){
-        showAlert('login-error', '📧 Please verify your email first — check your inbox for a confirmation link from EagleEyE.');
-      } else if(msg.toLowerCase().includes('invalid') || msg.toLowerCase().includes('incorrect')){
+      const msg = data.error_description || data.msg || data.message || 'Login failed.';
+      if(msg.toLowerCase().includes('email not confirmed')){
+        showAlert('login-error', '📧 Please verify your email first — check your inbox for a confirmation link.');
+      } else if(msg.toLowerCase().includes('invalid')){
         showAlert('login-error', 'Incorrect email or password. Please check and try again.');
       } else {
         showAlert('login-error', msg);
@@ -164,14 +159,39 @@ async function doLogin(){
       return;
     }
 
-    // Save session to localStorage
-    EE_AUTH.saveSession(data);
+    const access_token  = data.access_token;
+    const refresh_token = data.refresh_token;
+    const userId = data.user?.id;
 
-    // Redirect to dashboard
+    // Step 2: Get profile from Supabase
+    let profile = { firstName:'', lastName:'', plan:'free', trialEndsAt:null };
+    try{
+      const profRes = await fetch(`${SB_URL}/rest/v1/profiles?id=eq.${userId}&select=*`, {
+        headers: { 'apikey': SB_ANON, 'Authorization': `Bearer ${access_token}` }
+      });
+      const profiles = await profRes.json();
+      if(profiles[0]){
+        profile = {
+          firstName:   profiles[0].first_name  || '',
+          lastName:    profiles[0].last_name   || '',
+          plan:        profiles[0].plan        || 'free',
+          trialEndsAt: profiles[0].trial_ends_at || null,
+          goal:        profiles[0].goal        || null,
+        };
+      }
+    }catch(e){}
+
+    // Step 3: Save session
+    localStorage.setItem('ee_access_token',  access_token);
+    localStorage.setItem('ee_refresh_token', refresh_token || '');
+    localStorage.setItem('ee_user',    JSON.stringify({ id: userId, email }));
+    localStorage.setItem('ee_profile', JSON.stringify(profile));
+    localStorage.setItem('ee_token_expires', String(Date.now() + 55*60*1000));
+
     window.location.href='dashboard.html';
 
   }catch(err){
-    showAlert('login-error','Network error. Please check your connection.');
+    showAlert('login-error','Network error: '+err.message);
     btn.disabled=false; btn.textContent='Log in to EagleEyE';
   }
 }

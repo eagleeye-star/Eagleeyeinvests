@@ -246,37 +246,79 @@ async function doSignup(){
   btn.disabled=true;
   btn.innerHTML='<span class="spinner"></span>Creating your account…';
 
-  const body={
-    firstName: document.getElementById('firstName').value.trim(),
-    lastName:  document.getElementById('lastName').value.trim(),
-    email:     document.getElementById('email').value.trim(),
-    phone:     document.getElementById('phone').value.trim(),
-    password:  document.getElementById('password').value,
-    plan:      selectedPlan,
-  };
+  const firstName = document.getElementById('firstName').value.trim();
+  const lastName  = document.getElementById('lastName').value.trim();
+  const email     = document.getElementById('email').value.trim();
+  const phone     = document.getElementById('phone').value.trim();
+  const password  = document.getElementById('password').value;
+
+  const SB_URL  = 'https://jyhamtniuhlsbwcdfspa.supabase.co';
+  const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp5aGFtdG5pdWhsc2J3Y2Rmc3BhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxNjE1MTgsImV4cCI6MjA5NzczNzUxOH0.1nT-wpRjjAIpgUk_BDTlu3z4Cvuz_G0nKX9l65cwpF0';
 
   try {
-    const res = await fetch('/api/signup', {
+    // Step 1: Sign up with Supabase Auth directly
+    const authRes = await fetch(`${SB_URL}/auth/v1/signup`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
+      headers: { 'Content-Type': 'application/json', 'apikey': SB_ANON },
+      body: JSON.stringify({ email, password, data: { first_name: firstName, last_name: lastName } }),
     });
-    const data = await res.json();
+    const authData = await authRes.json();
 
-    if (!res.ok) {
-      showAlert('step2-error', data.error || 'Something went wrong. Please try again.');
-      btn.disabled=false;
-      btn.textContent='Start my free trial →';
+    if (!authRes.ok) {
+      const msg = authData.error_description || authData.msg || authData.message || 'Could not create account.';
+      if (msg.toLowerCase().includes('already registered') || msg.toLowerCase().includes('already exists')) {
+        showAlert('step2-error', 'An account with this email already exists. Try logging in instead.');
+      } else {
+        showAlert('step2-error', msg);
+      }
+      btn.disabled=false; btn.textContent='Start my free trial →';
       return;
     }
 
-    // Success — show trial confirmation step
+    const userId = authData.user?.id || authData.id;
+    const access_token = authData.access_token;
+
+    if (!userId) {
+      showAlert('step2-error', 'Account created — please check your email to confirm, then log in.');
+      btn.disabled=false; btn.textContent='Start my free trial →';
+      return;
+    }
+
+    // Step 2: Create profile in Supabase
+    const trialEnd = new Date(Date.now() + 14*24*60*60*1000).toISOString();
+    await fetch(`${SB_URL}/rest/v1/profiles`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SB_ANON,
+        'Authorization': `Bearer ${access_token}`,
+        'Prefer': 'return=minimal',
+      },
+      body: JSON.stringify({
+        id: userId,
+        first_name: firstName,
+        last_name: lastName,
+        phone: phone || null,
+        plan: 'free',
+        trial_ends_at: trialEnd,
+      }),
+    });
+
+    // Step 3: Save session
+    if (access_token) {
+      localStorage.setItem('ee_access_token',  access_token);
+      localStorage.setItem('ee_refresh_token', authData.refresh_token || '');
+      localStorage.setItem('ee_user',    JSON.stringify({ id: userId, email }));
+      localStorage.setItem('ee_profile', JSON.stringify({ firstName, lastName, plan:'free', trialEndsAt: trialEnd }));
+      localStorage.setItem('ee_token_expires', String(Date.now() + 55*60*1000));
+    }
+
+    // Step 4: Show success
     showStep(3);
 
-  } catch(err){
-    showAlert('step2-error', 'Network error. Please check your connection and try again.');
-    btn.disabled=false;
-    btn.textContent='Start my free trial →';
+  } catch(err) {
+    showAlert('step2-error', 'Network error: ' + err.message);
+    btn.disabled=false; btn.textContent='Start my free trial →';
   }
 }
 
