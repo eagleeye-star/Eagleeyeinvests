@@ -240,17 +240,18 @@ const EAGLE_SVG = `<svg viewBox="0 0 24 24" fill="none"><path d="M12 3C7 5 4 9 2
 
 /* ---- Navigation ---- */
 const NAV_ITEMS = [
-  {href:'index.html',      label:'Home'},
-  {href:'dashboard.html',  label:'Portfolio'},
-  {href:'watchlist.html',  label:'Watchlist'},
-  {href:'research.html',   label:'Eagle Research'},
-  {href:'dividends.html',  label:'Dividends'},
-  {href:'market.html',     label:'Market'},
-  {href:'companies.html',  label:'Companies'},
-  {href:'screener.html',   label:'Screener'},
-  {href:'news.html',       label:'News'},
-  {href:'alerts.html',     label:'Alerts'},
-  {href:'pricing.html',    label:'Pricing'},
+  {href:'index.html',       label:'Home'},
+  {href:'dashboard.html',   label:'Portfolio'},
+  {href:'watchlist.html',   label:'Watchlist'},
+  {href:'research.html',    label:'Eagle Research'},
+  {href:'dividends.html',   label:'Dividends'},
+  {href:'gse-events.html',  label:'GSE Events'},
+  {href:'market.html',      label:'Market'},
+  {href:'companies.html',   label:'Companies'},
+  {href:'screener.html',    label:'Screener'},
+  {href:'news.html',        label:'News'},
+  {href:'alerts.html',      label:'Alerts'},
+  {href:'pricing.html',     label:'Pricing'},
 ];
 
 function buildHeader(activePage){

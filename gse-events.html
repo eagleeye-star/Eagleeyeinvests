@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GSE Events — EagleEyE</title>
+<link rel="stylesheet" href="style.css">
+<script>document.documentElement.setAttribute("data-theme",localStorage.getItem("ee_theme")||"dark");</script>
+<style>
+.ev-wrap{max-width:1100px;margin:0 auto;padding:28px 24px 60px;}
+.ev-header{margin-bottom:28px;}
+.tab-bar{display:flex;gap:4px;background:var(--panel-2);padding:4px;border-radius:10px;width:fit-content;margin-bottom:24px;}
+.ev-tab{padding:9px 18px;border-radius:7px;border:none;background:none;color:var(--text-dim);cursor:pointer;font-size:13px;font-family:var(--font-body);font-weight:500;transition:all .15s;white-space:nowrap;}
+.ev-tab.active{background:var(--panel);color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,0.2);}
+.section{display:none;}
+.section.active{display:block;}
+
+/* ===== DIVIDEND CALENDAR ===== */
+.div-filters{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;}
+.month-chip{padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:none;color:var(--text-dim);font-size:12px;cursor:pointer;font-family:var(--font-body);transition:all .15s;}
+.month-chip.active{background:var(--gold-glow);border-color:var(--gold-dim);color:var(--gold-bright);}
+.div-table{width:100%;border-collapse:collapse;}
+.div-table th{padding:10px 14px;text-align:left;font-size:10.5px;color:var(--text-faint);text-transform:uppercase;letter-spacing:0.04em;background:var(--panel-2);font-weight:500;}
+.div-table td{padding:12px 14px;border-top:1px solid var(--border-soft);font-size:13px;}
+.div-table td:not(:first-child):not(:nth-child(2)){font-family:var(--font-mono);}
+.div-table tr:hover td{background:var(--panel-2);}
+.status-badge{display:inline-block;font-size:11px;padding:2px 8px;border-radius:10px;font-family:var(--font-mono);}
+.badge-upcoming{background:var(--gold-glow);color:var(--gold-bright);border:1px solid rgba(212,165,55,0.2);}
+.badge-confirmed{background:var(--green-fill);color:var(--green-bright);}
+.badge-paid{background:var(--panel-3);color:var(--text-faint);}
+.yield-bar{display:flex;align-items:center;gap:8px;}
+.yield-fill{height:4px;background:var(--gold-bright);border-radius:2px;}
+
+/* ===== IPO TRACKER ===== */
+.ipo-card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:22px;margin-bottom:14px;}
+.ipo-card.upcoming{border-left:3px solid var(--gold-bright);}
+.ipo-card.recent{border-left:3px solid var(--green-bright);}
+.ipo-card.closed{border-left:3px solid var(--border);}
+.ipo-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:14px;}
+.ipo-company{font-size:17px;font-weight:600;}
+.ipo-ticker{font-family:var(--font-mono);font-size:13px;color:var(--gold-bright);margin-top:3px;}
+.ipo-meta{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:14px;padding-top:14px;border-top:1px solid var(--border-soft);}
+.ipo-meta-item .lbl{font-size:10.5px;color:var(--text-faint);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:4px;}
+.ipo-meta-item .val{font-size:13.5px;font-weight:600;font-family:var(--font-mono);}
+.ipo-progress{margin-top:12px;}
+.ipo-progress-bar{height:6px;background:var(--panel-3);border-radius:3px;overflow:hidden;margin-top:6px;}
+.ipo-progress-fill{height:100%;background:linear-gradient(90deg,var(--gold-dim),var(--gold-bright));border-radius:3px;transition:width 1s ease;}
+.ipo-desc{font-size:12.5px;color:var(--text-dim);line-height:1.6;margin-top:10px;}
+
+/* ===== RIGHTS ISSUES ===== */
+.rights-card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:14px;}
+.rights-card.active-rights{border-left:3px solid var(--gold-bright);}
+.rights-card.closed-rights{border-left:3px solid var(--border);}
+.rights-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:10px;}
+.rights-meta{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border-soft);}
+.rights-meta .lbl{font-size:10.5px;color:var(--text-faint);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:4px;}
+.rights-meta .val{font-size:13px;font-weight:600;font-family:var(--font-mono);}
+.days-left{font-size:22px;font-weight:700;color:var(--gold-bright);}
+.days-left.urgent{color:var(--red);}
+
+/* ===== ANNUAL REPORTS ===== */
+.reports-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;}
+.report-card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius-sm);padding:16px;display:flex;align-items:center;gap:14px;transition:border-color .15s;}
+.report-card:hover{border-color:var(--gold-dim);}
+.report-icon{width:42px;height:42px;border-radius:9px;background:var(--panel-2);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+.report-info .company{font-size:13.5px;font-weight:600;margin-bottom:3px;}
+.report-info .ticker{font-size:11.5px;color:var(--gold-bright);font-family:var(--font-mono);}
+.report-links{display:flex;flex-direction:column;gap:4px;margin-top:8px;}
+.report-link{font-size:11.5px;color:var(--text-dim);text-decoration:none;display:flex;align-items:center;gap:5px;}
+.report-link:hover{color:var(--gold-bright);}
+.report-search{background:var(--panel-2);border:1px solid var(--border);color:var(--text);padding:9px 14px;border-radius:var(--radius-sm);font-size:13px;width:280px;margin-bottom:18px;font-family:var(--font-body);}
+.report-search:focus{outline:none;border-color:var(--gold-dim);}
+
+@media(max-width:700px){
+  .ipo-meta,.rights-meta{grid-template-columns:repeat(2,1fr);}
+  .reports-grid{grid-template-columns:1fr;}
+  .tab-bar{overflow-x:auto;width:100%;}
+}
+</style>
+</head>
+<body>
+<div id="chrome-header"></div>
+
+<div class="ev-wrap">
+  <div class="ev-header">
+    <div style="font-family:var(--font-display);font-size:26px;font-weight:600;">GSE Events</div>
+    <div style="font-size:13px;color:var(--text-dim);margin-top:4px;">Dividend calendar · IPO tracker · Rights issues · Annual reports</div>
+  </div>
+
+  <div class="tab-bar">
+    <button class="ev-tab active" onclick="showTab('dividends',this)">📅 Dividend Calendar</button>
+    <button class="ev-tab" onclick="showTab('ipo',this)">🚀 IPO Tracker</button>
+    <button class="ev-tab" onclick="showTab('rights',this)">📋 Rights Issues</button>
+    <button class="ev-tab" onclick="showTab('reports',this)">📄 Annual Reports</button>
+  </div>
+
+  <!-- ===== DIVIDEND CALENDAR ===== -->
+  <div id="sec-dividends" class="section active">
+    <div class="div-filters" id="month-filters"></div>
+    <div class="panel" style="overflow:hidden;">
+      <table class="div-table">
+        <thead><tr>
+          <th>Company</th><th>Dividend (GH₵)</th><th>Yield</th>
+          <th>Ex-Date</th><th>Payment Date</th><th>Status</th>
+        </tr></thead>
+        <tbody id="div-body"></tbody>
+      </table>
+    </div>
+    <div style="font-size:11.5px;color:var(--text-faint);margin-top:12px;line-height:1.6;">
+      * Ex-dividend date: you must own shares before this date to receive the dividend.
+      Dividend data sourced from GSE company announcements and annual reports.
+    </div>
+  </div>
+
+  <!-- ===== IPO TRACKER ===== -->
+  <div id="sec-ipo" class="section">
+    <div id="ipo-upcoming"></div>
+    <div id="ipo-recent"></div>
+  </div>
+
+  <!-- ===== RIGHTS ISSUES ===== -->
+  <div id="sec-rights" class="section">
+    <div id="rights-active"></div>
+    <div id="rights-closed"></div>
+  </div>
+
+  <!-- ===== ANNUAL REPORTS ===== -->
+  <div id="sec-reports" class="section">
+    <input class="report-search" id="report-search" placeholder="Search company or ticker…" oninput="filterReports()">
+    <div class="reports-grid" id="reports-grid"></div>
+  </div>
+</div>
+
+<div id="chrome-footer"></div>
+<script src="auth.js"></script>
+<script src="auth-guard.js"></script>
+<script src="data.js"></script>
+<script>
+mountChrome('gse-events.html');
+
+function showTab(name, btn){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.ev-tab').forEach(b=>b.classList.remove('active'));
+  document.getElementById('sec-'+name).classList.add('active');
+  btn.classList.add('active');
+}
+
+// ================================================================
+// DIVIDEND CALENDAR DATA
+// Source: GSE company announcements & annual reports 2025-2026
+// ================================================================
+const DIVIDENDS = [
+  // 2026 Dividends
+  {company:'Ecobank Ghana Ltd',ticker:'EGH',amount:1.1132,yield:7.0,exDate:'2026-06-10',payDate:'2026-07-08',status:'confirmed'},
+  {company:'Republic Bank Ghana Ltd',ticker:'RBGH',amount:0.046,yield:3.0,exDate:'2026-05-15',payDate:'2026-06-01',status:'paid'},
+  {company:'GCB Bank Ltd',ticker:'GCB',amount:2.80,yield:8.0,exDate:'2026-04-22',payDate:'2026-05-15',status:'paid'},
+  {company:'MTN Ghana Ltd',ticker:'MTNGH',amount:0.392,yield:6.0,exDate:'2026-05-08',payDate:'2026-05-30',status:'paid'},
+  {company:'Standard Chartered Ghana',ticker:'SCB',amount:4.65,yield:6.5,exDate:'2026-06-20',payDate:'2026-07-15',status:'confirmed'},
+  {company:'GOIL Company Ltd',ticker:'GOIL',amount:0.397,yield:5.0,exDate:'2026-05-20',payDate:'2026-06-10',status:'paid'},
+  {company:'Enterprise Group Ltd',ticker:'EGL',amount:0.55,yield:5.5,exDate:'2026-07-15',payDate:'2026-08-05',status:'upcoming'},
+  {company:'SIC Insurance Company',ticker:'SIC',amount:0.224,yield:4.0,exDate:'2026-07-22',payDate:'2026-08-12',status:'upcoming'},
+  {company:'Guinness Ghana Breweries',ticker:'GGBL',amount:0.708,yield:4.8,exDate:'2026-08-10',payDate:'2026-09-01',status:'upcoming'},
+  {company:'TotalEnergies Ghana',ticker:'TOTAL',amount:2.34,yield:5.8,exDate:'2026-08-20',payDate:'2026-09-10',status:'upcoming'},
+  {company:'Benso Oil Palm Plantation',ticker:'BOPP',amount:4.44,yield:5.2,exDate:'2026-07-05',payDate:'2026-07-25',status:'upcoming'},
+  {company:'Fan Milk Ltd',ticker:'FML',amount:0.467,yield:3.5,exDate:'2026-09-15',payDate:'2026-10-05',status:'upcoming'},
+  {company:'Unilever Ghana Ltd',ticker:'UNIL',amount:0.638,yield:4.2,exDate:'2026-09-20',payDate:'2026-10-10',status:'upcoming'},
+  {company:'CalBank PLC',ticker:'CAL',amount:0.029,yield:4.0,exDate:'2026-06-05',payDate:'2026-06-25',status:'paid'},
+  {company:'Access Bank Ghana',ticker:'ACC',amount:1.021,yield:3.2,exDate:'2026-06-18',payDate:'2026-07-08',status:'confirmed'},
+  {company:'Société Générale Ghana',ticker:'SOGEGH',amount:0.258,yield:3.8,exDate:'2026-08-05',payDate:'2026-08-25',status:'upcoming'},
+  {company:'Ecobank Transnational Inc.',ticker:'ETI',amount:0.045,yield:2.0,exDate:'2026-07-30',payDate:'2026-08-20',status:'upcoming'},
+  {company:'GOIL Company Ltd',ticker:'GOIL',amount:0.397,yield:5.0,exDate:'2025-05-10',payDate:'2025-06-01',status:'paid'},
+  {company:'GCB Bank Ltd',ticker:'GCB',amount:2.20,yield:8.0,exDate:'2025-04-15',payDate:'2025-05-08',status:'paid'},
+];
+
+let activeMonth = 'all';
+
+function renderDividends(){
+  const now = new Date();
+  const months = ['all','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  // Month filter chips
+  const mf = document.getElementById('month-filters');
+  mf.innerHTML = months.map(m=>`
+    <button class="month-chip ${m===activeMonth?'active':''}" onclick="setMonth('${m}',this)">${m==='all'?'All months':m}</button>
+  `).join('');
+
+  // Filter dividends
+  let divs = DIVIDENDS;
+  if(activeMonth !== 'all'){
+    const mi = months.indexOf(activeMonth);
+    divs = divs.filter(d=>{ const dt=new Date(d.exDate); return (dt.getMonth()+1)===mi; });
+  }
+
+  // Sort by ex-date descending
+  divs.sort((a,b)=>new Date(b.exDate)-new Date(a.exDate));
+
+  const tbody = document.getElementById('div-body');
+  const maxYield = Math.max(...DIVIDENDS.map(d=>d.yield));
+
+  tbody.innerHTML = divs.map(d=>{
+    const badge = d.status==='upcoming'
+      ? '<span class="status-badge badge-upcoming">⏳ Upcoming</span>'
+      : d.status==='confirmed'
+        ? '<span class="status-badge badge-confirmed">✓ Confirmed</span>'
+        : '<span class="status-badge badge-paid">✓ Paid</span>';
+
+    const yieldBar = `<div class="yield-bar">
+      <span>${d.yield}%</span>
+      <div style="flex:1;height:4px;background:var(--panel-3);border-radius:2px;overflow:hidden;">
+        <div style="width:${(d.yield/maxYield)*100}%;height:100%;background:var(--gold-bright);border-radius:2px;"></div>
+      </div>
+    </div>`;
+
+    const exFmt = new Date(d.exDate).toLocaleDateString('en-GH',{day:'numeric',month:'short',year:'numeric'});
+    const payFmt = new Date(d.payDate).toLocaleDateString('en-GH',{day:'numeric',month:'short',year:'numeric'});
+
+    // Highlight if user holds this stock
+    const holds = liveHoldings?.some?.(h=>h.ticker===d.ticker||h.ticker==='KASAPREKO'&&d.ticker==='KPLC');
+
+    return `<tr ${holds?'style="background:rgba(212,165,55,0.05);"':''}>
+      <td>
+        <div style="font-weight:600;">${d.ticker}</div>
+        <div style="font-size:11.5px;color:var(--text-dim);">${d.company}</div>
+        ${holds?'<div style="font-size:10px;color:var(--gold-bright);margin-top:2px;">★ In your portfolio</div>':''}
+      </td>
+      <td><strong>GH₵${fmt(d.amount,4)}</strong></td>
+      <td>${yieldBar}</td>
+      <td>${exFmt}</td>
+      <td>${payFmt}</td>
+      <td>${badge}</td>
+    </tr>`;
+  }).join('');
+}
+
+function setMonth(m, btn){
+  activeMonth = m;
+  document.querySelectorAll('.month-chip').forEach(c=>c.classList.remove('active'));
+  btn.classList.add('active');
+  renderDividends();
+}
+
+// ================================================================
+// IPO TRACKER
+// ================================================================
+const IPOS = [
+  {
+    company:'Kasapreko Company PLC',
+    ticker:'KPLC',
+    sector:'Consumer Goods',
+    status:'recent',
+    offerPrice:1.20,
+    currentPrice:2.10,
+    sharesOffered:'3.76 billion',
+    amountRaised:'GH₵1.72 billion',
+    openDate:'2026-04-01',
+    closeDate:'2026-05-30',
+    listingDate:'2026-06-13',
+    subscription:'~40% allotted',
+    desc:'Kasapreko Company PLC, Ghana\'s leading beverage manufacturer, completed the largest manufacturing IPO in Ghanaian history, raising GH₵1.72 billion. The company produces over 50 beverage brands including alcoholic and non-alcoholic drinks distributed across Ghana and West Africa.',
+    returnPct: ((2.10-1.20)/1.20*100).toFixed(1),
+  },
+  {
+    company:'ZEN Petroleum Holdings',
+    ticker:'ZEN',
+    sector:'Oil & Gas',
+    status:'recent',
+    offerPrice:8.00,
+    currentPrice:9.68,
+    sharesOffered:'320 million',
+    amountRaised:'GH₵2.56 billion',
+    openDate:'2026-02-01',
+    closeDate:'2026-03-15',
+    listingDate:'2026-04-02',
+    subscription:'Oversubscribed',
+    desc:'ZEN Petroleum Holdings PLC is a downstream petroleum company operating fuel retail stations across Ghana. The company listed on the GSE Main Board following a successful IPO.',
+    returnPct: ((9.68-8.00)/8.00*100).toFixed(1),
+  },
+  {
+    company:'Mega African Capital',
+    ticker:'MEGA',
+    sector:'Banking',
+    status:'recent',
+    offerPrice:4.50,
+    currentPrice:5.20,
+    sharesOffered:'~10 million',
+    amountRaised:'GH₵45 million',
+    openDate:'2025-10-01',
+    closeDate:'2025-11-15',
+    listingDate:'2025-12-01',
+    subscription:'Fully subscribed',
+    desc:'Mega African Capital Ltd is a non-bank financial institution offering investment and capital market services in Ghana.',
+    returnPct: ((5.20-4.50)/4.50*100).toFixed(1),
+  },
+];
+
+function renderIPOs(){
+  const upcoming = IPOS.filter(i=>i.status==='upcoming');
+  const recent   = IPOS.filter(i=>i.status==='recent');
+
+  const cardHTML = (ipo) => {
+    const returnColor = parseFloat(ipo.returnPct) >= 0 ? 'var(--green-bright)' : 'var(--red)';
+    const currentStock = gseStocks.find(s=>s.ticker===ipo.ticker);
+    const livePrice = currentStock?.price || ipo.currentPrice;
+    const liveReturn = (((livePrice-ipo.offerPrice)/ipo.offerPrice)*100).toFixed(1);
+
+    return `<div class="ipo-card ${ipo.status}">
+      <div class="ipo-header">
+        <div>
+          <div class="ipo-company">${ipo.company}</div>
+          <div class="ipo-ticker">${ipo.ticker} · ${ipo.sector}</div>
+        </div>
+        <span class="status-badge ${ipo.status==='upcoming'?'badge-upcoming':'badge-confirmed'}">${ipo.status==='upcoming'?'⏳ Upcoming':'✓ Listed'}</span>
+      </div>
+      <div style="font-size:12.5px;color:var(--text-dim);line-height:1.6;">${ipo.desc}</div>
+      <div class="ipo-meta">
+        <div class="ipo-meta-item">
+          <div class="lbl">Offer Price</div>
+          <div class="val">GH₵${fmt(ipo.offerPrice,2)}</div>
+        </div>
+        <div class="ipo-meta-item">
+          <div class="lbl">Current Price</div>
+          <div class="val" style="color:${returnColor};">GH₵${fmt(livePrice,2)}</div>
+        </div>
+        <div class="ipo-meta-item">
+          <div class="lbl">IPO Return</div>
+          <div class="val" style="color:${returnColor};">${parseFloat(liveReturn)>=0?'+':''}${liveReturn}%</div>
+        </div>
+        <div class="ipo-meta-item">
+          <div class="lbl">Amount Raised</div>
+          <div class="val">${ipo.amountRaised}</div>
+        </div>
+        <div class="ipo-meta-item">
+          <div class="lbl">Shares Offered</div>
+          <div class="val">${ipo.sharesOffered}</div>
+        </div>
+        <div class="ipo-meta-item">
+          <div class="lbl">Subscription</div>
+          <div class="val">${ipo.subscription}</div>
+        </div>
+        <div class="ipo-meta-item">
+          <div class="lbl">Listing Date</div>
+          <div class="val">${new Date(ipo.listingDate).toLocaleDateString('en-GH',{day:'numeric',month:'short',year:'numeric'})}</div>
+        </div>
+        <div class="ipo-meta-item">
+          <div class="lbl">Close Date</div>
+          <div class="val">${new Date(ipo.closeDate).toLocaleDateString('en-GH',{day:'numeric',month:'short',year:'numeric'})}</div>
+        </div>
+      </div>
+    </div>`;
+  };
+
+  document.getElementById('ipo-upcoming').innerHTML = upcoming.length
+    ? `<div style="font-size:13px;font-weight:600;color:var(--gold-bright);margin-bottom:12px;text-transform:uppercase;letter-spacing:0.05em;">Upcoming IPOs</div>` + upcoming.map(cardHTML).join('')
+    : `<div class="panel" style="text-align:center;padding:32px;color:var(--text-dim);margin-bottom:16px;">No upcoming IPOs announced at this time. Check back regularly.</div>`;
+
+  document.getElementById('ipo-recent').innerHTML = recent.length
+    ? `<div style="font-size:13px;font-weight:600;color:var(--text-dim);margin-bottom:12px;text-transform:uppercase;letter-spacing:0.05em;margin-top:${upcoming.length?'24px':'0'};">Recent IPOs</div>` + recent.map(cardHTML).join('')
+    : '';
+}
+
+// ================================================================
+// RIGHTS ISSUES
+// ================================================================
+const RIGHTS_ISSUES = [
+  {
+    company:'CalBank PLC',
+    ticker:'CAL',
+    status:'closed',
+    ratio:'1 for 2',
+    offerPrice:0.55,
+    purpose:'Capital adequacy and expansion of digital banking infrastructure across Ghana.',
+    openDate:'2025-08-01',
+    closeDate:'2025-09-15',
+    amountTargeted:'GH₵171M',
+    result:'Fully subscribed',
+  },
+  {
+    company:'GCB Bank Ltd',
+    ticker:'GCB',
+    status:'closed',
+    ratio:'1 for 5',
+    offerPrice:22.00,
+    purpose:'Strengthening capital base to meet Bank of Ghana minimum capital requirements and fund branch expansion.',
+    openDate:'2025-06-01',
+    closeDate:'2025-07-15',
+    amountTargeted:'GH₵1.16B',
+    result:'Oversubscribed',
+  },
+];
+
+function renderRights(){
+  const active = RIGHTS_ISSUES.filter(r=>r.status==='active');
+  const closed = RIGHTS_ISSUES.filter(r=>r.status==='closed');
+  const now = new Date();
+
+  const cardHTML = (r) => {
+    const closeDate = new Date(r.closeDate);
+    const daysLeft = Math.ceil((closeDate-now)/(1000*60*60*24));
+    const isActive = r.status==='active';
+
+    return `<div class="rights-card ${isActive?'active-rights':'closed-rights'}">
+      <div class="rights-header">
+        <div>
+          <div style="font-size:16px;font-weight:600;">${r.company}</div>
+          <div style="font-size:12px;color:var(--gold-bright);font-family:var(--font-mono);margin-top:2px;">${r.ticker}</div>
+        </div>
+        <div style="text-align:right;">
+          ${isActive
+            ? `<div class="days-left ${daysLeft<=7?'urgent':''}">${daysLeft} days left</div><div style="font-size:11px;color:var(--text-faint);">to subscribe</div>`
+            : `<span class="status-badge badge-paid">Closed</span>`
+          }
+        </div>
+      </div>
+      <div style="font-size:12.5px;color:var(--text-dim);line-height:1.6;">${r.purpose}</div>
+      <div class="rights-meta">
+        <div><div class="lbl">Ratio</div><div class="val">${r.ratio} share</div></div>
+        <div><div class="lbl">Offer Price</div><div class="val">GH₵${fmt(r.offerPrice,2)}</div></div>
+        <div><div class="lbl">Amount</div><div class="val">${r.amountTargeted}</div></div>
+        <div><div class="lbl">Open Date</div><div class="val">${new Date(r.openDate).toLocaleDateString('en-GH',{day:'numeric',month:'short'})}</div></div>
+        <div><div class="lbl">Close Date</div><div class="val">${new Date(r.closeDate).toLocaleDateString('en-GH',{day:'numeric',month:'short',year:'numeric'})}</div></div>
+        <div><div class="lbl">Result</div><div class="val" style="color:var(--green-bright);">${r.result||'Pending'}</div></div>
+      </div>
+    </div>`;
+  };
+
+  document.getElementById('rights-active').innerHTML = active.length
+    ? `<div style="font-size:13px;font-weight:600;color:var(--gold-bright);margin-bottom:12px;text-transform:uppercase;letter-spacing:0.05em;">⚡ Active — Subscribe Now</div>` + active.map(cardHTML).join('')
+    : `<div class="panel" style="text-align:center;padding:32px;color:var(--text-dim);margin-bottom:16px;">No active rights issues at this time. We'll notify you when one is announced.</div>`;
+
+  document.getElementById('rights-closed').innerHTML = closed.length
+    ? `<div style="font-size:13px;font-weight:600;color:var(--text-dim);margin-bottom:12px;text-transform:uppercase;letter-spacing:0.05em;margin-top:${active.length?'24px':'0'};">Recent Rights Issues</div>` + closed.map(cardHTML).join('')
+    : '';
+}
+
+// ================================================================
+// ANNUAL REPORTS
+// ================================================================
+const ANNUAL_REPORTS = [
+  {ticker:'GCB',  company:'GCB Bank Ltd',           icon:'🏦', sector:'Banking',
+    reports:[{year:2024,url:'https://gse.com.gh/company/GCB/annual-reports'},{year:2023,url:'https://gse.com.gh/company/GCB/annual-reports'}],
+    website:'https://gcbbank.com.gh', gseUrl:'https://gse.com.gh/company-profile/?company=GCB'},
+  {ticker:'MTNGH',company:'MTN Ghana Ltd',           icon:'📡', sector:'Telecom',
+    reports:[{year:2024,url:'https://mtn.com.gh/investor-relations'},{year:2023,url:'https://mtn.com.gh/investor-relations'}],
+    website:'https://mtn.com.gh/investor-relations', gseUrl:'https://gse.com.gh/company-profile/?company=MTNGH'},
+  {ticker:'EGH',  company:'Ecobank Ghana Ltd',       icon:'🏦', sector:'Banking',
+    reports:[{year:2024,url:'https://ecobank.com/gh/personal/investor-relations'},{year:2023,url:'https://ecobank.com/gh/personal/investor-relations'}],
+    website:'https://ecobank.com/gh/personal/investor-relations', gseUrl:'https://gse.com.gh/company-profile/?company=EGH'},
+  {ticker:'ETI',  company:'Ecobank Transnational',   icon:'🌍', sector:'Banking',
+    reports:[{year:2024,url:'https://ecobank.com/group/investor-relations/annual-reports'},{year:2023,url:'https://ecobank.com/group/investor-relations/annual-reports'}],
+    website:'https://ecobank.com/group/investor-relations', gseUrl:'https://gse.com.gh/company-profile/?company=ETI'},
+  {ticker:'GOIL', company:'GOIL Company Ltd',        icon:'⛽', sector:'Energy',
+    reports:[{year:2024,url:'https://goil.com.gh/investor-relations'},{year:2023,url:'https://goil.com.gh/investor-relations'}],
+    website:'https://goil.com.gh', gseUrl:'https://gse.com.gh/company-profile/?company=GOIL'},
+  {ticker:'GGBL', company:'Guinness Ghana Breweries',icon:'🍺', sector:'Consumer Goods',
+    reports:[{year:2024,url:'https://gse.com.gh/company-profile/?company=GGBL'},{year:2023,url:'https://gse.com.gh/company-profile/?company=GGBL'}],
+    website:'https://guinness-ghana.com', gseUrl:'https://gse.com.gh/company-profile/?company=GGBL'},
+  {ticker:'KPLC', company:'Kasapreko Company PLC',   icon:'🥤', sector:'Consumer Goods',
+    reports:[{year:2024,url:'https://kasapreko.com'},{year:2023,url:'https://kasapreko.com'}],
+    website:'https://kasapreko.com', gseUrl:'https://gse.com.gh/company-profile/?company=KPLC'},
+  {ticker:'EGL',  company:'Enterprise Group Ltd',    icon:'🏢', sector:'Insurance',
+    reports:[{year:2024,url:'https://enterprisegroup.com.gh/investor-relations'},{year:2023,url:'https://enterprisegroup.com.gh/investor-relations'}],
+    website:'https://enterprisegroup.com.gh', gseUrl:'https://gse.com.gh/company-profile/?company=EGL'},
+  {ticker:'SCB',  company:'Standard Chartered Ghana',icon:'🏦', sector:'Banking',
+    reports:[{year:2024,url:'https://sc.com/gh/investor-relations/'},{year:2023,url:'https://sc.com/gh/investor-relations/'}],
+    website:'https://sc.com/gh', gseUrl:'https://gse.com.gh/company-profile/?company=SCB'},
+  {ticker:'TOTAL',company:'TotalEnergies Ghana',     icon:'⛽', sector:'Energy',
+    reports:[{year:2024,url:'https://totalenergies.com.gh'},{year:2023,url:'https://totalenergies.com.gh'}],
+    website:'https://totalenergies.com.gh', gseUrl:'https://gse.com.gh/company-profile/?company=TOTAL'},
+  {ticker:'SIC',  company:'SIC Insurance Company',   icon:'🛡️', sector:'Insurance',
+    reports:[{year:2024,url:'https://sicghana.com'},{year:2023,url:'https://sicghana.com'}],
+    website:'https://sicghana.com', gseUrl:'https://gse.com.gh/company-profile/?company=SIC'},
+  {ticker:'RBGH', company:'Republic Bank Ghana',     icon:'🏦', sector:'Banking',
+    reports:[{year:2024,url:'https://republicghana.com/investor-relations'},{year:2023,url:'https://republicghana.com/investor-relations'}],
+    website:'https://republicghana.com', gseUrl:'https://gse.com.gh/company-profile/?company=RBGH'},
+  {ticker:'CAL',  company:'CalBank PLC',             icon:'🏦', sector:'Banking',
+    reports:[{year:2024,url:'https://calbank.net/investor-relations'},{year:2023,url:'https://calbank.net/investor-relations'}],
+    website:'https://calbank.net', gseUrl:'https://gse.com.gh/company-profile/?company=CAL'},
+  {ticker:'ACC',  company:'Access Bank Ghana',       icon:'🏦', sector:'Banking',
+    reports:[{year:2024,url:'https://ghana.accessbankplc.com/investor-relations'},{year:2023,url:'https://ghana.accessbankplc.com/investor-relations'}],
+    website:'https://ghana.accessbankplc.com', gseUrl:'https://gse.com.gh/company-profile/?company=ACC'},
+  {ticker:'BOPP', company:'Benso Oil Palm Plantation',icon:'🌴', sector:'Agriculture',
+    reports:[{year:2024,url:'https://gse.com.gh/company-profile/?company=BOPP'},{year:2023,url:'https://gse.com.gh/company-profile/?company=BOPP'}],
+    website:'https://gse.com.gh/company-profile/?company=BOPP', gseUrl:'https://gse.com.gh/company-profile/?company=BOPP'},
+  {ticker:'FML',  company:'Fan Milk Ltd',            icon:'🍦', sector:'Consumer Goods',
+    reports:[{year:2024,url:'https://gse.com.gh/company-profile/?company=FML'},{year:2023,url:'https://gse.com.gh/company-profile/?company=FML'}],
+    website:'https://fanmilk.com', gseUrl:'https://gse.com.gh/company-profile/?company=FML'},
+  {ticker:'SOGEGH',company:'Société Générale Ghana', icon:'🏦', sector:'Banking',
+    reports:[{year:2024,url:'https://societegenerale.com.gh'},{year:2023,url:'https://societegenerale.com.gh'}],
+    website:'https://societegenerale.com.gh', gseUrl:'https://gse.com.gh/company-profile/?company=SOGEGH'},
+  {ticker:'UNIL', company:'Unilever Ghana Ltd',      icon:'🏭', sector:'Consumer Goods',
+    reports:[{year:2024,url:'https://unilever.com.gh'},{year:2023,url:'https://unilever.com.gh'}],
+    website:'https://unilever.com.gh', gseUrl:'https://gse.com.gh/company-profile/?company=UNIL'},
+  {ticker:'ZEN',  company:'ZEN Petroleum Holdings',  icon:'⛽', sector:'Oil & Gas',
+    reports:[{year:2024,url:'https://gse.com.gh/company-profile/?company=ZEN'},{year:2023,url:'https://gse.com.gh/company-profile/?company=ZEN'}],
+    website:'https://gse.com.gh/company-profile/?company=ZEN', gseUrl:'https://gse.com.gh/company-profile/?company=ZEN'},
+  {ticker:'ADB',  company:'Agricultural Dev. Bank',  icon:'🌾', sector:'Banking',
+    reports:[{year:2024,url:'https://adbghana.com/investor'},{year:2023,url:'https://adbghana.com/investor'}],
+    website:'https://adbghana.com', gseUrl:'https://gse.com.gh/company-profile/?company=ADB'},
+];
+
+let allReports = ANNUAL_REPORTS;
+
+function filterReports(){
+  const q = (document.getElementById('report-search').value||'').toLowerCase();
+  const filtered = ANNUAL_REPORTS.filter(r=>
+    !q || r.ticker.toLowerCase().includes(q) || r.company.toLowerCase().includes(q) || r.sector.toLowerCase().includes(q)
+  );
+  renderReports(filtered);
+}
+
+function renderReports(reports){
+  document.getElementById('reports-grid').innerHTML = reports.map(r=>`
+    <div class="report-card">
+      <div class="report-icon">${r.icon}</div>
+      <div class="report-info" style="flex:1;min-width:0;">
+        <div class="company">${r.company}</div>
+        <div class="ticker">${r.ticker} · ${r.sector}</div>
+        <div class="report-links">
+          ${r.reports.map(rep=>`
+            <a href="${rep.url}" target="_blank" rel="noopener" class="report-link">
+              📄 ${rep.year} Annual Report →
+            </a>`).join('')}
+          <a href="${r.gseUrl}" target="_blank" rel="noopener" class="report-link">
+            🏛 GSE Company Profile →
+          </a>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+// Initial render
+renderDividends();
+renderIPOs();
+renderRights();
+renderReports(ANNUAL_REPORTS);
+
+// Update IPO current prices when live data loads
+loadLiveData(()=>{ renderIPOs(); });
+</script>
+<script>
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{ navigator.serviceWorker.register('/sw.js').catch(e=>{}); });
+}
+</script>
+</body>
+</html>
