@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#D4A537">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="EagleEyE">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+<title>Log In — EagleEyE</title>
+<link rel="stylesheet" href="style.css">
+<script>document.documentElement.setAttribute("data-theme",localStorage.getItem("ee_theme")||"dark");</script>
+<style>
+.auth-page{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:40px 20px;}
+.auth-card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:36px 36px 30px;width:100%;max-width:420px;}
+.auth-brand{display:flex;align-items:center;gap:11px;margin-bottom:28px;}
+.auth-brand .brand-mark{width:38px;height:38px;border-radius:10px;background:linear-gradient(150deg,var(--gold-bright),var(--gold));display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 1px rgba(212,165,55,0.25);}
+.auth-brand .brand-mark svg{width:20px;height:20px;}
+.auth-brand .name{font-family:var(--font-display);font-size:19px;font-weight:600;}
+.auth-brand .sub{font-size:11px;color:var(--text-faint);}
+.auth-title{font-family:var(--font-display);font-size:22px;font-weight:600;margin-bottom:4px;}
+.auth-sub{font-size:13px;color:var(--text-dim);margin-bottom:24px;}
+.field{margin-bottom:14px;}
+.field label{font-size:11.5px;color:var(--text-dim);display:block;margin-bottom:6px;font-weight:500;text-transform:uppercase;letter-spacing:0.04em;}
+.field input{width:100%;padding:10px 13px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13.5px;background:var(--panel-2);color:var(--text);font-family:var(--font-body);transition:border-color .15s;}
+.field input:focus{outline:none;border-color:var(--gold-dim);}
+.field input.has-error{border-color:var(--red);}
+.field-error{font-size:11px;color:var(--red);margin-top:4px;display:none;}
+.field-error.show{display:block;}
+.pw-wrap{position:relative;}
+.pw-wrap input{padding-right:38px;}
+.pw-eye{position:absolute;right:11px;top:50%;transform:translateY(-50%);cursor:pointer;color:var(--text-faint);background:none;border:none;font-size:16px;display:flex;align-items:center;}
+.divider{display:flex;align-items:center;gap:10px;margin:18px 0;font-size:12px;color:var(--text-faint);}
+.divider::before,.divider::after{content:'';flex:1;height:0.5px;background:var(--border);}
+.google-btn{width:100%;display:flex;align-items:center;justify-content:center;gap:9px;padding:11px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--panel-2);font-size:13px;font-weight:500;cursor:pointer;color:var(--text);font-family:var(--font-body);transition:border-color .15s;}
+.google-btn:hover{border-color:var(--text-faint);}
+.google-btn svg{width:17px;height:17px;flex-shrink:0;}
+.submit-btn{width:100%;padding:12px;border-radius:var(--radius-sm);border:none;background:linear-gradient(150deg,var(--gold-bright),var(--gold));color:#1A1300;font-size:13.5px;font-weight:700;cursor:pointer;font-family:var(--font-body);margin-top:20px;transition:filter .15s;}
+.submit-btn:hover:not(:disabled){filter:brightness(1.08);}
+.submit-btn:disabled{opacity:0.6;cursor:not-allowed;}
+.forgot{text-align:right;margin-top:-6px;margin-bottom:14px;}
+.forgot a{font-size:12px;color:var(--gold-bright);text-decoration:none;}
+.switch-text{text-align:center;font-size:12.5px;color:var(--text-dim);margin-top:18px;}
+.switch-text a{color:var(--gold-bright);text-decoration:none;font-weight:500;}
+.alert-box{padding:12px 14px;border-radius:var(--radius-sm);font-size:12.5px;line-height:1.6;margin-top:14px;display:none;}
+.alert-box.show{display:block;}
+.alert-error{background:var(--red-fill);border:1px solid rgba(217,89,76,0.3);color:var(--red);}
+.alert-info{background:rgba(212,165,55,0.08);border:1px solid rgba(212,165,55,0.25);color:var(--gold-bright);}
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(26,19,0,0.3);border-top-color:#1A1300;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.page-theme-toggle{
+  position:fixed;top:18px;right:20px;z-index:100;
+  width:36px;height:36px;border-radius:9px;
+  border:1px solid var(--border);background:var(--panel-2);
+  cursor:pointer;font-size:17px;transition:all .15s;
+  display:flex;align-items:center;justify-content:center;
+  color:var(--text-dim);
+}
+.page-theme-toggle:hover{border-color:var(--gold-dim);color:var(--gold-bright);}
+
+</style>
+</head>
+<body>
+<button class="page-theme-toggle" id="standaloneThemeBtn" onclick="toggleStandaloneTheme()" title="Switch theme" aria-label="Toggle light/dark theme">☀️</button>
+<div class="auth-page">
+  <div class="auth-card">
+    <div class="auth-brand">
+      <div class="brand-mark">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M12 3C7 5 4 9 2 12c2 3 5 7 10 9 5-2 8-6 10-9-2-3-5-7-10-9z" stroke="#1A1300" stroke-width="1.8" stroke-linejoin="round"/><circle cx="12" cy="12" r="3" fill="#1A1300"/></svg>
+      </div>
+      <div><div class="name">EagleEyE</div><div class="sub">Ghana's investor intelligence platform</div></div>
+    </div>
+
+    <div class="auth-title">Welcome back</div>
+    <div class="auth-sub">Log in to your EagleEyE account.</div>
+
+    <button class="google-btn" onclick="googleLogin()" type="button">
+      <svg viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+      Continue with Google
+    </button>
+    <div class="divider">or log in with email</div>
+
+    <div class="field">
+      <label>Email address</label>
+      <input type="email" id="email" placeholder="you@example.com" autocomplete="email">
+      <div class="field-error" id="email-err">Enter a valid email</div>
+    </div>
+    <div class="field">
+      <label>Password</label>
+      <div class="pw-wrap">
+        <input type="password" id="password" placeholder="Your password" autocomplete="current-password">
+        <button class="pw-eye" onclick="togglePw('password')" type="button">👁</button>
+      </div>
+      <div class="field-error" id="password-err">Password is required</div>
+    </div>
+
+    <div class="forgot"><a href="#" onclick="forgotPassword()">Forgot password?</a></div>
+
+    <div class="alert-box alert-error" id="login-error"></div>
+    <div class="alert-box alert-info" id="login-info"></div>
+
+    <button class="submit-btn" id="login-btn" onclick="doLogin()">Log in to EagleEyE</button>
+    <div class="switch-text">Don't have an account? <a href="signup.html">Create one free</a></div>
+  </div>
+</div>
+
+<script src="auth.js"></script>
+<script>
+// Redirect to dashboard if already logged in
+EE_AUTH.redirectIfLoggedIn('dashboard.html');
+
+function togglePw(id){
+  const i=document.getElementById(id);
+  i.type = i.type==='password'?'text':'password';
+}
+function clearErr(id){ document.getElementById(id).classList.remove('has-error'); document.getElementById(id+'-err').classList.remove('show'); }
+function showErr(id){ document.getElementById(id).classList.add('has-error'); document.getElementById(id+'-err').classList.add('show'); }
+function showAlert(id,msg){ const el=document.getElementById(id); el.textContent=msg; el.classList.add('show'); }
+function hideAlerts(){ document.getElementById('login-error').classList.remove('show'); document.getElementById('login-info').classList.remove('show'); }
+
+async function doLogin(){
+  hideAlerts();
+  let ok=true;
+  const email=document.getElementById('email').value.trim();
+  const password=document.getElementById('password').value;
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ showErr('email'); ok=false; }
+  if(!password){ showErr('password'); ok=false; }
+  if(!ok) return;
+
+  const btn=document.getElementById('login-btn');
+  btn.disabled=true;
+  btn.innerHTML='<span class="spinner"></span>Logging in…';
+
+  const SB_URL  = 'https://jyhamtniuhlsbwcdfspa.supabase.co';
+  const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp5aGFtdG5pdWhsc2J3Y2Rmc3BhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxNjE1MTgsImV4cCI6MjA5NzczNzUxOH0.1nT-wpRjjAIpgUk_BDTlu3z4Cvuz_G0nKX9l65cwpF0';
+
+  try{
+    // Step 1: Sign in with Supabase directly
+    const res = await fetch(`${SB_URL}/auth/v1/token?grant_type=password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'apikey': SB_ANON },
+      body: JSON.stringify({ email, password }),
+    });
+    const data = await res.json();
+
+    if(!res.ok){
+      const msg = data.error_description || data.msg || data.message || 'Login failed.';
+      if(msg.toLowerCase().includes('email not confirmed')){
+        showAlert('login-error', '📧 Please verify your email first — check your inbox for a confirmation link.');
+      } else if(msg.toLowerCase().includes('invalid')){
+        showAlert('login-error', 'Incorrect email or password. Please check and try again.');
+      } else {
+        showAlert('login-error', msg);
+      }
+      btn.disabled=false; btn.textContent='Log in to EagleEyE';
+      return;
+    }
+
+    const access_token  = data.access_token;
+    const refresh_token = data.refresh_token;
+    const userId = data.user?.id;
+
+    // Step 2: Get profile from Supabase
+    let profile = { firstName:'', lastName:'', plan:'free', trialEndsAt:null };
+    try{
+      const profRes = await fetch(`${SB_URL}/rest/v1/profiles?id=eq.${userId}&select=*`, {
+        headers: { 'apikey': SB_ANON, 'Authorization': `Bearer ${access_token}` }
+      });
+      const profiles = await profRes.json();
+      if(profiles[0]){
+        profile = {
+          firstName:   profiles[0].first_name  || '',
+          lastName:    profiles[0].last_name   || '',
+          plan:        profiles[0].plan        || 'free',
+          trialEndsAt: profiles[0].trial_ends_at || null,
+          goal:        profiles[0].goal        || null,
+        };
+      }
+    }catch(e){}
+
+    // Step 3: Save session
+    localStorage.setItem('ee_access_token',  access_token);
+    localStorage.setItem('ee_refresh_token', refresh_token || '');
+    localStorage.setItem('ee_user',    JSON.stringify({ id: userId, email }));
+    localStorage.setItem('ee_profile', JSON.stringify(profile));
+    localStorage.setItem('ee_token_expires', String(Date.now() + 55*60*1000));
+
+    window.location.href='dashboard.html';
+
+  }catch(err){
+    showAlert('login-error','Network error: '+err.message);
+    btn.disabled=false; btn.textContent='Log in to EagleEyE';
+  }
+}
+
+async function forgotPassword(){
+  const email=document.getElementById('email').value.trim();
+  if(!email){ showErr('email'); return; }
+  hideAlerts();
+  try{
+    // Supabase handles password reset emails automatically
+    await fetch(`https://jyhamtniuhlsbwcdfspa.supabase.co/auth/v1/recover`,{
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'apikey':'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp5aGFtdG5pdWhsc2J3Y2Rmc3BhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxNjE1MTgsImV4cCI6MjA5NzczNzUxOH0.1nT-wpRjjAIpgUk_BDTlu3z4Cvuz_G0nKX9l65cwpF0',
+      },
+      body:JSON.stringify({email}),
+    });
+    showAlert('login-info',`Password reset email sent to ${email}. Check your inbox.`);
+  }catch{
+    showAlert('login-error','Could not send reset email. Try again.');
+  }
+}
+
+function googleLogin(){
+  const SUPABASE_URL = 'https://jyhamtniuhlsbwcdfspa.supabase.co';
+  const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp5aGFtdG5pdWhsc2J3Y2Rmc3BhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxNjE1MTgsImV4cCI6MjA5NzczNzUxOH0.1nT-wpRjjAIpgUk_BDTlu3z4Cvuz_G0nKX9l65cwpF0';
+  const redirectTo = `${window.location.origin}/auth-callback.html`;
+  // Build the Supabase Google OAuth URL
+  const params = new URLSearchParams({
+    provider: 'google',
+    redirect_to: redirectTo,
+  });
+  window.location.href = `${SUPABASE_URL}/auth/v1/authorize?${params.toString()}&access_type=offline&prompt=consent`;
+}
+
+// Allow Enter key to submit only from password field
+document.getElementById('password').addEventListener('keydown', e=>{ if(e.key==='Enter') doLogin(); });
+document.getElementById('email').addEventListener('keydown', e=>{ if(e.key==='Enter') document.getElementById('password').focus(); });
+</script>
+  <script>
+    if('serviceWorker' in navigator){
+      window.addEventListener('load', ()=>{
+        navigator.serviceWorker.register('/sw.js')
+          .then(r=>console.log('[PWA] SW registered:', r.scope))
+          .catch(e=>console.log('[PWA] SW error:', e));
+      });
+    }
+  </script>
+</body>
+</html>
