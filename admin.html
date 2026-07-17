@@ -509,6 +509,18 @@ async function sendNotification(){
   }catch{errEl.textContent='Network error.';errEl.classList.add('show');}
 }
 
+// ===== TABS =====
+function showTab(name,btn){
+  ['users','subscriptions','feedback','gse','notifications'].forEach(t=>{
+    const el=document.getElementById('tab-'+t);
+    if(el) el.style.display=t===name?'block':'none';
+  });
+  document.querySelectorAll('.admin-tab').forEach(b=>b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  if(name==='feedback'&&!allFeedback.length) loadFeedback();
+  if(name==='gse') loadGSEAdmin();
+}
+
 // ===== GSE DATA MANAGEMENT =====
 function toggleForm(id){
   const el=document.getElementById(id);
