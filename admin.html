@@ -105,6 +105,7 @@
       <button class="admin-tab active" onclick="showTab('users',this)">👥 Users</button>
       <button class="admin-tab" onclick="showTab('subscriptions',this)">💳 Subscriptions</button>
       <button class="admin-tab" onclick="showTab('feedback',this)">💬 Feedback</button>
+      <button class="admin-tab" onclick="showTab('gse',this)">📊 GSE Data</button>
       <button class="admin-tab" onclick="showTab('notifications',this)">🔔 Notifications</button>
     </div>
 
@@ -146,6 +147,130 @@
           <thead><tr><th>Rating</th><th>Category</th><th>Message</th><th>Page</th><th>Email</th><th>Date</th></tr></thead>
           <tbody id="feedback-body"></tbody>
         </table>
+      </div>
+    </div>
+
+    <!-- GSE DATA TAB -->
+    <div id="tab-gse" style="display:none;">
+
+      <!-- GSE-CI Update -->
+      <div class="panel" style="margin-bottom:18px;">
+        <div class="panel-head"><div class="panel-title">📈 GSE-CI Index</div></div>
+        <div style="padding:18px;display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:12px;align-items:end;">
+          <div>
+            <div style="font-size:11px;color:var(--text-dim);margin-bottom:5px;text-transform:uppercase;letter-spacing:0.04em;">Index Value</div>
+            <input type="number" id="gseci-val" placeholder="e.g. 14647" class="search-bar" style="width:100%;">
+          </div>
+          <div>
+            <div style="font-size:11px;color:var(--text-dim);margin-bottom:5px;text-transform:uppercase;letter-spacing:0.04em;">Change (e.g. +0.38%)</div>
+            <input type="text" id="gseci-chg" placeholder="e.g. +0.38%" class="search-bar" style="width:100%;">
+          </div>
+          <div>
+            <div style="font-size:11px;color:var(--text-dim);margin-bottom:5px;text-transform:uppercase;letter-spacing:0.04em;">Label (e.g. Jul 2026)</div>
+            <input type="text" id="gseci-label" placeholder="e.g. Jul 2026" class="search-bar" style="width:100%;">
+          </div>
+          <button class="btn btn-gold" onclick="updateGSECI()">Update</button>
+        </div>
+        <div style="padding:0 18px 14px;font-size:12px;color:var(--text-faint);" id="gseci-current">Loading current value…</div>
+        <div class="alert-box alert-success" id="gseci-success" style="margin:0 18px 14px;"></div>
+      </div>
+
+      <!-- Dividends -->
+      <div class="panel" style="margin-bottom:18px;">
+        <div class="panel-head">
+          <div class="panel-title">📅 Dividends</div>
+          <button class="btn btn-gold btn-sm" onclick="toggleForm('div-form')">+ Add Dividend</button>
+        </div>
+        <div id="div-form" style="display:none;padding:18px;background:var(--panel-2);border-bottom:1px solid var(--border);">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+            <div><label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:4px;">Company</label><input type="text" id="div-company" placeholder="GCB Bank Ltd" class="search-bar" style="width:100%;"></div>
+            <div><label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:4px;">Ticker</label><input type="text" id="div-ticker" placeholder="GCB" class="search-bar" style="width:100%;"></div>
+            <div><label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:4px;">Amount (GH₵)</label><input type="number" id="div-amount" placeholder="2.80" step="0.0001" class="search-bar" style="width:100%;"></div>
+            <div><label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:4px;">Yield (%)</label><input type="number" id="div-yield" placeholder="8.0" step="0.1" class="search-bar" style="width:100%;"></div>
+            <div><label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:4px;">Ex-Date</label><input type="date" id="div-exdate" class="search-bar" style="width:100%;"></div>
+            <div><label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:4px;">Payment Date</label><input type="date" id="div-paydate" class="search-bar" style="width:100%;"></div>
+          </div>
+          <div style="margin-bottom:12px;"><label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:4px;">Status</label>
+            <select id="div-status" class="search-bar" style="width:200px;">
+              <option value="upcoming">Upcoming</option>
+              <option value="confirmed">Confirmed</option>
+              <option value="paid">Paid</option>
+            </select>
+          </div>
+          <div class="alert-box alert-error" id="div-err"></div>
+          <button class="btn btn-gold" onclick="saveDividend()">Save Dividend</button>
+          <button class="btn btn-ghost" onclick="toggleForm('div-form')" style="margin-left:8px;">Cancel</button>
+        </div>
+        <div id="div-list" style="padding:14px 18px;"><div style="font-size:13px;color:var(--text-faint);">Loading…</div></div>
+      </div>
+
+      <!-- IPOs -->
+      <div class="panel" style="margin-bottom:18px;">
+        <div class="panel-head">
+          <div class="panel-title">🚀 IPOs</div>
+          <button class="btn btn-gold btn-sm" onclick="toggleForm('ipo-form')">+ Add IPO</button>
+        </div>
+        <div id="ipo-form" style="display:none;padding:18px;background:var(--panel-2);border-bottom:1px solid var(--border);">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+            <div><label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:4px;">Company</label><input type="text" id="ipo-company" placeholder="Kasapreko Company PLC" class="search-bar" style="width:100%;"></div>
+            <div><label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:4px;">Ticker</label><input type="text" id="ipo-ticker" placeholder="KPLC" class="search-bar" style="width:100%;"></div>
+            <div><label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:4px;">Sector</label><input type="text" id="ipo-sector" placeholder="Consumer Goods" class="search-bar" style="width:100%;"></div>
+            <div><label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:4px;">Offer Price (GH₵)</label><input type="number" id="ipo-price" step="0.01" class="search-bar" style="width:100%;"></div>
+            <div><label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:4px;">Shares Offered</label><input type="text" id="ipo-shares" placeholder="3.76 billion" class="search-bar" style="width:100%;"></div>
+            <div><label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:4px;">Amount Raised</label><input type="text" id="ipo-raised" placeholder="GH₵1.72 billion" class="search-bar" style="width:100%;"></div>
+            <div><label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:4px;">Open Date</label><input type="date" id="ipo-open" class="search-bar" style="width:100%;"></div>
+            <div><label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:4px;">Close Date</label><input type="date" id="ipo-close" class="search-bar" style="width:100%;"></div>
+            <div><label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:4px;">Listing Date</label><input type="date" id="ipo-listing" class="search-bar" style="width:100%;"></div>
+            <div><label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:4px;">Subscription Status</label><input type="text" id="ipo-sub" placeholder="Oversubscribed" class="search-bar" style="width:100%;"></div>
+          </div>
+          <div style="margin-bottom:12px;"><label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:4px;">Status</label>
+            <select id="ipo-status" class="search-bar" style="width:200px;">
+              <option value="upcoming">Upcoming</option>
+              <option value="recent">Recently Listed</option>
+              <option value="closed">Closed</option>
+            </select>
+          </div>
+          <div style="margin-bottom:12px;"><label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:4px;">Description</label>
+            <textarea id="ipo-desc" placeholder="Brief description of the company and IPO…" style="width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;background:var(--panel);color:var(--text);height:80px;resize:none;font-family:var(--font-body);"></textarea>
+          </div>
+          <div class="alert-box alert-error" id="ipo-err"></div>
+          <button class="btn btn-gold" onclick="saveIPO()">Save IPO</button>
+          <button class="btn btn-ghost" onclick="toggleForm('ipo-form')" style="margin-left:8px;">Cancel</button>
+        </div>
+        <div id="ipo-list" style="padding:14px 18px;"><div style="font-size:13px;color:var(--text-faint);">Loading…</div></div>
+      </div>
+
+      <!-- Rights Issues -->
+      <div class="panel">
+        <div class="panel-head">
+          <div class="panel-title">📋 Rights Issues</div>
+          <button class="btn btn-gold btn-sm" onclick="toggleForm('rights-form')">+ Add Rights Issue</button>
+        </div>
+        <div id="rights-form" style="display:none;padding:18px;background:var(--panel-2);border-bottom:1px solid var(--border);">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+            <div><label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:4px;">Company</label><input type="text" id="ri-company" placeholder="CalBank PLC" class="search-bar" style="width:100%;"></div>
+            <div><label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:4px;">Ticker</label><input type="text" id="ri-ticker" placeholder="CAL" class="search-bar" style="width:100%;"></div>
+            <div><label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:4px;">Ratio</label><input type="text" id="ri-ratio" placeholder="1 for 2" class="search-bar" style="width:100%;"></div>
+            <div><label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:4px;">Offer Price (GH₵)</label><input type="number" id="ri-price" step="0.01" class="search-bar" style="width:100%;"></div>
+            <div><label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:4px;">Amount Targeted</label><input type="text" id="ri-amount" placeholder="GH₵171M" class="search-bar" style="width:100%;"></div>
+            <div><label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:4px;">Result</label><input type="text" id="ri-result" placeholder="Fully subscribed" class="search-bar" style="width:100%;"></div>
+            <div><label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:4px;">Open Date</label><input type="date" id="ri-open" class="search-bar" style="width:100%;"></div>
+            <div><label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:4px;">Close Date</label><input type="date" id="ri-close" class="search-bar" style="width:100%;"></div>
+          </div>
+          <div style="margin-bottom:12px;"><label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:4px;">Purpose</label>
+            <textarea id="ri-purpose" placeholder="Why is the company raising funds?" style="width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;background:var(--panel);color:var(--text);height:70px;resize:none;font-family:var(--font-body);"></textarea>
+          </div>
+          <div style="margin-bottom:12px;"><label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:4px;">Status</label>
+            <select id="ri-status" class="search-bar" style="width:200px;">
+              <option value="active">Active</option>
+              <option value="closed">Closed</option>
+            </select>
+          </div>
+          <div class="alert-box alert-error" id="ri-err"></div>
+          <button class="btn btn-gold" onclick="saveRights()">Save Rights Issue</button>
+          <button class="btn btn-ghost" onclick="toggleForm('rights-form')" style="margin-left:8px;">Cancel</button>
+        </div>
+        <div id="rights-list" style="padding:14px 18px;"><div style="font-size:13px;color:var(--text-faint);">Loading…</div></div>
       </div>
     </div>
 
@@ -384,14 +509,187 @@ async function sendNotification(){
   }catch{errEl.textContent='Network error.';errEl.classList.add('show');}
 }
 
-// ===== TABS =====
-function showTab(name,btn){
-  ['users','subscriptions','feedback','notifications'].forEach(t=>{
-    document.getElementById('tab-'+t).style.display=t===name?'block':'none';
+// ===== GSE DATA MANAGEMENT =====
+function toggleForm(id){
+  const el=document.getElementById(id);
+  el.style.display=el.style.display==='none'?'block':'none';
+}
+
+async function loadGSEAdmin(){
+  // Load current GSE-CI
+  try{
+    const r=await fetch('/api/gse-data?table=settings');
+    const d=await r.json();
+    const settings={};
+    (d.data||[]).forEach(s=>{ settings[s.key]=s.value; });
+    document.getElementById('gseci-val').value=settings.gseci||'';
+    document.getElementById('gseci-chg').value=settings.gseci_change||'';
+    document.getElementById('gseci-label').value=settings.gseci_updated||'';
+    document.getElementById('gseci-current').textContent=
+      `Current: ${settings.gseci||'—'} (${settings.gseci_change||'—'}) as of ${settings.gseci_updated||'—'}`;
+  }catch(e){}
+
+  // Load dividends list
+  loadGSEList('dividends','div-list',renderDivList);
+  loadGSEList('ipos','ipo-list',renderIPOList);
+  loadGSEList('rights','rights-list',renderRightsList);
+}
+
+async function loadGSEList(table, elId, renderFn){
+  const el=document.getElementById(elId);
+  try{
+    const r=await fetch('/api/gse-data?table='+table);
+    const d=await r.json();
+    renderFn(d.data||[], el);
+  }catch(e){ el.innerHTML='<div style="color:var(--red);font-size:12px;">Failed to load.</div>'; }
+}
+
+function renderDivList(items, el){
+  if(!items.length){ el.innerHTML='<div style="font-size:12px;color:var(--text-faint);">No dividends added yet.</div>'; return; }
+  el.innerHTML=`<table style="width:100%;border-collapse:collapse;font-size:12.5px;">
+    <thead><tr style="background:var(--panel-2);">
+      <th style="padding:8px;text-align:left;">Ticker</th><th style="padding:8px;text-align:left;">Company</th>
+      <th style="padding:8px;">Amount</th><th style="padding:8px;">Ex-Date</th>
+      <th style="padding:8px;">Status</th><th style="padding:8px;"></th>
+    </tr></thead>
+    <tbody>${items.map(d=>`<tr style="border-top:1px solid var(--border-soft);">
+      <td style="padding:8px;font-family:var(--font-mono);font-weight:700;">${d.ticker}</td>
+      <td style="padding:8px;">${d.company}</td>
+      <td style="padding:8px;text-align:center;font-family:var(--font-mono);">GH₵${parseFloat(d.amount).toFixed(4)}</td>
+      <td style="padding:8px;text-align:center;font-family:var(--font-mono);">${d.ex_date}</td>
+      <td style="padding:8px;text-align:center;"><span class="plan-badge-${d.status==='paid'?'free':d.status==='confirmed'?'premium':'trial'}">${d.status}</span></td>
+      <td style="padding:8px;text-align:right;"><button onclick="deleteGSE('dividends','${d.id}','div-list',renderDivList)" class="icon-btn del">✕</button></td>
+    </tr>`).join('')}</tbody>
+  </table>`;
+}
+
+function renderIPOList(items, el){
+  if(!items.length){ el.innerHTML='<div style="font-size:12px;color:var(--text-faint);">No IPOs added yet.</div>'; return; }
+  el.innerHTML=items.map(i=>`<div style="padding:10px 0;border-bottom:1px solid var(--border-soft);display:flex;justify-content:space-between;align-items:center;font-size:12.5px;">
+    <div><span style="font-family:var(--font-mono);font-weight:700;">${i.ticker||'—'}</span> ${i.company} <span style="color:var(--text-faint);">${i.status}</span></div>
+    <button onclick="deleteGSE('ipos','${i.id}','ipo-list',renderIPOList)" class="icon-btn del">✕</button>
+  </div>`).join('');
+}
+
+function renderRightsList(items, el){
+  if(!items.length){ el.innerHTML='<div style="font-size:12px;color:var(--text-faint);">No rights issues added yet.</div>'; return; }
+  el.innerHTML=items.map(r=>`<div style="padding:10px 0;border-bottom:1px solid var(--border-soft);display:flex;justify-content:space-between;align-items:center;font-size:12.5px;">
+    <div><span style="font-family:var(--font-mono);font-weight:700;">${r.ticker||'—'}</span> ${r.company} · ${r.ratio||'—'} @ GH₵${r.offer_price||'—'} <span style="color:var(--text-faint);">${r.status}</span></div>
+    <button onclick="deleteGSE('rights','${r.id}','rights-list',renderRightsList)" class="icon-btn del">✕</button>
+  </div>`).join('');
+}
+
+async function deleteGSE(table, id, listId, renderFn){
+  if(!confirm('Delete this entry?')) return;
+  await fetch(`/api/admin-gse?table=${table}&id=${id}`,{method:'DELETE',headers:{'X-Admin-Secret':adminSecret}});
+  loadGSEList(table, listId, renderFn);
+}
+
+async function updateGSECI(){
+  const val   = document.getElementById('gseci-val').value.trim();
+  const chg   = document.getElementById('gseci-chg').value.trim();
+  const label = document.getElementById('gseci-label').value.trim();
+  const sucEl = document.getElementById('gseci-success');
+  sucEl.classList.remove('show');
+  if(!val){ alert('Enter a GSE-CI value.'); return; }
+
+  // Update each setting key
+  const updates = [
+    {key:'gseci',value:val},
+    {key:'gseci_change',value:chg||'—'},
+    {key:'gseci_updated',value:label||new Date().toLocaleDateString('en-GH',{month:'short',year:'numeric'})},
+  ];
+  for(const u of updates){
+    await fetch(`/api/admin-gse?table=settings&key=${u.key}`,{
+      method:'PATCH',
+      headers:{'Content-Type':'application/json','X-Admin-Secret':adminSecret},
+      body:JSON.stringify({value:u.value}),
+    });
+  }
+  document.getElementById('gseci-current').textContent=`Current: ${val} (${chg}) as of ${label}`;
+  sucEl.textContent='✓ GSE-CI updated successfully. It will appear on the site within 5 minutes.';
+  sucEl.classList.add('show');
+  setTimeout(()=>sucEl.classList.remove('show'),4000);
+}
+
+async function saveDividend(){
+  const body={
+    company:   document.getElementById('div-company').value.trim(),
+    ticker:    document.getElementById('div-ticker').value.trim().toUpperCase(),
+    amount:    parseFloat(document.getElementById('div-amount').value),
+    yield:     parseFloat(document.getElementById('div-yield').value)||0,
+    ex_date:   document.getElementById('div-exdate').value,
+    pay_date:  document.getElementById('div-paydate').value,
+    status:    document.getElementById('div-status').value,
+  };
+  const errEl=document.getElementById('div-err');
+  errEl.classList.remove('show');
+  if(!body.company||!body.ticker||!body.amount||!body.ex_date||!body.pay_date){
+    errEl.textContent='Please fill in all required fields.';errEl.classList.add('show');return;
+  }
+  const r=await fetch('/api/admin-gse?table=dividends',{
+    method:'POST',headers:{'Content-Type':'application/json','X-Admin-Secret':adminSecret},
+    body:JSON.stringify(body),
   });
-  document.querySelectorAll('.admin-tab').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
-  if(name==='feedback'&&!allFeedback.length) loadFeedback();
+  if(r.ok){
+    toggleForm('div-form');
+    loadGSEList('dividends','div-list',renderDivList);
+    ['div-company','div-ticker','div-amount','div-yield','div-exdate','div-paydate'].forEach(id=>document.getElementById(id).value='');
+  } else { errEl.textContent='Failed to save.'; errEl.classList.add('show'); }
+}
+
+async function saveIPO(){
+  const body={
+    company:       document.getElementById('ipo-company').value.trim(),
+    ticker:        document.getElementById('ipo-ticker').value.trim().toUpperCase(),
+    sector:        document.getElementById('ipo-sector').value.trim(),
+    status:        document.getElementById('ipo-status').value,
+    offer_price:   parseFloat(document.getElementById('ipo-price').value)||null,
+    shares_offered:document.getElementById('ipo-shares').value.trim(),
+    amount_raised: document.getElementById('ipo-raised').value.trim(),
+    open_date:     document.getElementById('ipo-open').value||null,
+    close_date:    document.getElementById('ipo-close').value||null,
+    listing_date:  document.getElementById('ipo-listing').value||null,
+    subscription:  document.getElementById('ipo-sub').value.trim(),
+    description:   document.getElementById('ipo-desc').value.trim(),
+  };
+  const errEl=document.getElementById('ipo-err');
+  errEl.classList.remove('show');
+  if(!body.company){ errEl.textContent='Company name is required.'; errEl.classList.add('show'); return; }
+  const r=await fetch('/api/admin-gse?table=ipos',{
+    method:'POST',headers:{'Content-Type':'application/json','X-Admin-Secret':adminSecret},
+    body:JSON.stringify(body),
+  });
+  if(r.ok){
+    toggleForm('ipo-form');
+    loadGSEList('ipos','ipo-list',renderIPOList);
+  } else { errEl.textContent='Failed to save.'; errEl.classList.add('show'); }
+}
+
+async function saveRights(){
+  const body={
+    company:        document.getElementById('ri-company').value.trim(),
+    ticker:         document.getElementById('ri-ticker').value.trim().toUpperCase(),
+    status:         document.getElementById('ri-status').value,
+    ratio:          document.getElementById('ri-ratio').value.trim(),
+    offer_price:    parseFloat(document.getElementById('ri-price').value)||null,
+    purpose:        document.getElementById('ri-purpose').value.trim(),
+    open_date:      document.getElementById('ri-open').value||null,
+    close_date:     document.getElementById('ri-close').value||null,
+    amount_targeted:document.getElementById('ri-amount').value.trim(),
+    result:         document.getElementById('ri-result').value.trim(),
+  };
+  const errEl=document.getElementById('ri-err');
+  errEl.classList.remove('show');
+  if(!body.company){ errEl.textContent='Company name is required.'; errEl.classList.add('show'); return; }
+  const r=await fetch('/api/admin-gse?table=rights',{
+    method:'POST',headers:{'Content-Type':'application/json','X-Admin-Secret':adminSecret},
+    body:JSON.stringify(body),
+  });
+  if(r.ok){
+    toggleForm('rights-form');
+    loadGSEList('rights','rights-list',renderRightsList);
+  } else { errEl.textContent='Failed to save.'; errEl.classList.add('show'); }
 }
 </script>
 </body>

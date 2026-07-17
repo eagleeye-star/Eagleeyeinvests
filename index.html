@@ -109,12 +109,21 @@ function renderMovers(){
   const topG=sorted.filter(s=>s.chg>0)[0], topL=sorted.filter(s=>s.chg<0).slice(-1)[0];
   const mostActive=[...gseStocks].sort((a,b)=>b.volume-a.volume)[0];
   document.getElementById('snapStrip').innerHTML = `
-    <div class="snap-cell"><div class="lbl">GSE-CI Index</div><div class="val" id="snap-gseci">${calcGSECI().toLocaleString()}</div><div class="sub" style="color:var(--green-bright);">▲ Live</div></div>
+    <div class="snap-cell"><div class="lbl">GSE-CI Index</div><div class="val" id="snap-gseci">—</div><div class="sub" id="snap-gseci-sub" style="color:var(--green-bright);">Loading…</div></div>
     <div class="snap-cell"><div class="lbl">Market Cap</div><div class="val" id="snap-mktcap">${calcTotalMktCap()}</div><div class="sub">All 38 stocks</div></div>
     <div class="snap-cell"><div class="lbl">Top gainer</div><div class="val" style="color:var(--green-bright);">${topG?topG.ticker+' +'+fmt(topG.chg,1)+'%':'—'}</div><div class="sub">${topG?'GHS '+fmt(topG.price,2):'—'}</div></div>
     <div class="snap-cell"><div class="lbl">Top loser</div><div class="val" style="color:var(--red);">${topL?topL.ticker+' '+fmt(topL.chg,1)+'%':'—'}</div><div class="sub">${topL?'GHS '+fmt(topL.price,2):'—'}</div></div>
     <div class="snap-cell"><div class="lbl">Most active</div><div class="val">${mostActive&&mostActive.volume>0?mostActive.ticker:'MTNGH'}</div><div class="sub">${mostActive&&mostActive.volume>0?fmt(mostActive.volume,0)+' shares':'—'}</div></div>
   `;
+  // Load GSE-CI from Supabase settings (admin-managed, no auto-calculation)
+  fetch('/api/gse-data?table=settings').then(r=>r.json()).then(d=>{
+    const s={};
+    (d.data||[]).forEach(i=>{ s[i.key]=i.value; });
+    const el=document.getElementById('snap-gseci');
+    const sub=document.getElementById('snap-gseci-sub');
+    if(el && s.gseci) el.textContent=parseFloat(s.gseci).toLocaleString();
+    if(sub && s.gseci_change) sub.textContent=(s.gseci_change||'')+(s.gseci_updated?' · '+s.gseci_updated:'');
+  }).catch(()=>{ const el=document.getElementById('snap-gseci'); if(el) el.textContent='14,647'; });
   const g=document.getElementById('gainers'), l=document.getElementById('losers');
   g.innerHTML=''; l.innerHTML='';
   sorted.filter(s=>s.chg>0).slice(0,5).forEach(s=>{ g.innerHTML+=`<tr><td><div class="tk">${s.ticker}</div><div class="tk-name">${s.name}</div></td><td>GH₵${fmt(s.price,2)}</td><td><span class="chip chip-up">+${fmt(s.chg,2)}%</span></td></tr>`; });

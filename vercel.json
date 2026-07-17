@@ -27,6 +27,8 @@
     { "source": "/api/paystack-verify",  "destination": "/api/payments.js" },
     { "source": "/api/push-subscribe",   "destination": "/api/push.js" },
     { "source": "/api/push-send",        "destination": "/api/push.js" },
+    { "source": "/api/admin-gse",       "destination": "/api/gse.js" },
+    { "source": "/api/gse-data",         "destination": "/api/gse.js" },
     { "source": "/api/exchange-rate",    "destination": "/api/exchange-rate.js" }
   ],
   "headers": [

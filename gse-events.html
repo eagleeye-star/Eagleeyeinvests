@@ -174,6 +174,7 @@ const DIVIDENDS = [
 let activeMonth = 'all';
 
 function renderDividends(){
+  const DIVIDENDS = window.DIVIDENDS_LIVE || window.DIVIDENDS || [];
   const now = new Date();
   const months = ['all','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
@@ -185,6 +186,7 @@ function renderDividends(){
 
   // Filter dividends
   let divs = DIVIDENDS;
+  if(!divs.length){ document.getElementById('div-body').innerHTML='<tr><td colspan="6" style="text-align:center;padding:28px;color:var(--text-faint);">No dividend data yet. Check back soon.</td></tr>'; return; }
   if(activeMonth !== 'all'){
     const mi = months.indexOf(activeMonth);
     divs = divs.filter(d=>{ const dt=new Date(d.exDate); return (dt.getMonth()+1)===mi; });
@@ -293,8 +295,9 @@ const IPOS = [
 ];
 
 function renderIPOs(){
-  const upcoming = IPOS.filter(i=>i.status==='upcoming');
-  const recent   = IPOS.filter(i=>i.status==='recent');
+  const IPOS_DATA = window.IPOS_LIVE || IPOS || [];
+  const upcoming = IPOS_DATA.filter(i=>i.status==='upcoming');
+  const recent   = IPOS_DATA.filter(i=>i.status==='recent');
 
   const cardHTML = (ipo) => {
     const returnColor = parseFloat(ipo.returnPct) >= 0 ? 'var(--green-bright)' : 'var(--red)';
@@ -388,8 +391,9 @@ const RIGHTS_ISSUES = [
 ];
 
 function renderRights(){
-  const active = RIGHTS_ISSUES.filter(r=>r.status==='active');
-  const closed = RIGHTS_ISSUES.filter(r=>r.status==='closed');
+  const RIGHTS_DATA = window.RIGHTS_LIVE || RIGHTS_ISSUES || [];
+  const active = RIGHTS_DATA.filter(r=>r.status==='active');
+  const closed = RIGHTS_DATA.filter(r=>r.status==='closed');
   const now = new Date();
 
   const cardHTML = (r) => {
@@ -527,13 +531,81 @@ function renderReports(reports){
     </div>`).join('');
 }
 
-// Initial render
-renderDividends();
-renderIPOs();
-renderRights();
-renderReports(ANNUAL_REPORTS);
+// ================================================================
+// LOAD LIVE DATA FROM SUPABASE
+// Falls back to hardcoded data if API fails
+// ================================================================
+async function loadGSEData(){
+  try{
+    // Load dividends
+    const divRes = await fetch('/api/gse-data?table=dividends');
+    const divData = await divRes.json();
+    if(divData.data && divData.data.length > 0){
+      // Map Supabase column names to our format
+      window.DIVIDENDS_LIVE = divData.data.map(d=>({
+        company:  d.company,
+        ticker:   d.ticker,
+        amount:   parseFloat(d.amount),
+        yield:    parseFloat(d.yield)||0,
+        exDate:   d.ex_date,
+        payDate:  d.pay_date,
+        status:   d.status||'upcoming',
+      }));
+    }
 
-// Update IPO current prices when live data loads
+    // Load IPOs
+    const ipoRes = await fetch('/api/gse-data?table=ipos');
+    const ipoData = await ipoRes.json();
+    if(ipoData.data && ipoData.data.length > 0){
+      window.IPOS_LIVE = ipoData.data.map(i=>({
+        company:       i.company,
+        ticker:        i.ticker||'',
+        sector:        i.sector||'',
+        status:        i.status||'upcoming',
+        offerPrice:    parseFloat(i.offer_price)||0,
+        sharesOffered: i.shares_offered||'',
+        amountRaised:  i.amount_raised||'',
+        openDate:      i.open_date||'',
+        closeDate:     i.close_date||'',
+        listingDate:   i.listing_date||'',
+        subscription:  i.subscription||'',
+        desc:          i.description||'',
+      }));
+    }
+
+    // Load rights issues
+    const rightsRes = await fetch('/api/gse-data?table=rights');
+    const rightsData = await rightsRes.json();
+    if(rightsData.data && rightsData.data.length > 0){
+      window.RIGHTS_LIVE = rightsData.data.map(r=>({
+        company:        r.company,
+        ticker:         r.ticker||'',
+        status:         r.status||'closed',
+        ratio:          r.ratio||'',
+        offerPrice:     parseFloat(r.offer_price)||0,
+        purpose:        r.purpose||'',
+        openDate:       r.open_date||'',
+        closeDate:      r.close_date||'',
+        amountTargeted: r.amount_targeted||'',
+        result:         r.result||'',
+      }));
+    }
+  }catch(e){
+    console.warn('GSE data fetch failed, using hardcoded data:', e.message);
+  }
+
+  // Use live data if available, fallback to hardcoded
+  if(window.DIVIDENDS_LIVE) window.DIVIDENDS = window.DIVIDENDS_LIVE;
+  if(window.IPOS_LIVE)      window.IPOS = window.IPOS_LIVE;
+  if(window.RIGHTS_LIVE)    window.RIGHTS_ISSUES = window.RIGHTS_LIVE;
+
+  renderDividends();
+  renderIPOs();
+  renderRights();
+  renderReports(ANNUAL_REPORTS);
+}
+
+loadGSEData();
 loadLiveData(()=>{ renderIPOs(); });
 </script>
 <script>
