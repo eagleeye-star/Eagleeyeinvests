@@ -7,7 +7,8 @@ const gsePublic     = require('../lib/gse_public');
 
 module.exports = async function(req, res) {
   const event = await toEvent(req);
-  const url = req.url || '';
+  // Use original URL before Vercel rewrite — req.url becomes /api/admin.js after rewrite
+  const url = req.headers['x-original-url'] || req.headers['x-rewrite-url'] || req.url || '';
   let result;
 
   // Public endpoint — no auth required
