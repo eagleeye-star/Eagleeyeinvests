@@ -2,78 +2,196 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="manifest" href="/manifest.json">
-  <meta name="theme-color" content="#D4A537">
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="EagleEyE">
-  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#D4A537">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="EagleEyE">
+<link rel="apple-touch-icon" href="/icons/icon-192.png">
 <title>Dividends — EagleEyE</title>
 <link rel="stylesheet" href="style.css">
+<style>
+.div-table{width:100%;border-collapse:collapse;}
+.div-table th{padding:10px 14px;text-align:left;font-size:10.5px;color:var(--text-faint);text-transform:uppercase;letter-spacing:0.04em;background:var(--panel-2);font-weight:500;}
+.div-table td{padding:12px 14px;border-top:1px solid var(--border-soft);font-size:13px;}
+.div-table tr:hover td{background:var(--panel-2);}
+.div-table td:not(:first-child){font-family:var(--font-mono);}
+.status-badge{display:inline-block;font-size:11px;padding:2px 8px;border-radius:10px;font-family:var(--font-mono);}
+.badge-upcoming{background:var(--gold-glow);color:var(--gold-bright);border:1px solid rgba(212,165,55,0.2);}
+.badge-confirmed{background:var(--green-fill);color:var(--green-bright);}
+.badge-paid{background:var(--panel-3);color:var(--text-faint);}
+.in-portfolio{background:rgba(212,165,55,0.05);}
+.yield-bar{display:flex;align-items:center;gap:8px;}
+</style>
 </head>
 <body>
 <div id="chrome-header"></div>
 <div class="wrap">
   <div style="margin:28px 0 20px;">
     <div style="font-family:var(--font-display);font-size:26px;font-weight:600;">Dividend Centre</div>
-    <div style="font-size:13px;color:var(--text-dim);margin-top:4px;">Estimated income across your current holdings</div>
+    <div style="font-size:13px;color:var(--text-dim);margin-top:4px;">Your estimated dividend income · GSE dividend calendar</div>
   </div>
+
+  <!-- Portfolio dividend summary -->
   <div class="grid-3 mb" id="div-summary"></div>
+
+  <!-- Your holdings dividend income -->
   <div class="panel mb">
-    <div class="panel-head"><div class="panel-title">Dividend income per holding <span class="sub">— estimated annual</span></div></div>
-    <table>
+    <div class="panel-head"><div class="panel-title">Dividend income from your holdings <span class="sub">— estimated annual</span></div></div>
+    <table class="div-table">
       <thead><tr><th>Stock</th><th>Shares</th><th>Mkt value</th><th>Est. yield</th><th>Est. annual income</th></tr></thead>
       <tbody id="div-body"></tbody>
     </table>
   </div>
+
+  <!-- Full GSE Dividend Calendar from Supabase -->
   <div class="panel">
-    <div class="panel-head"><div class="panel-title">Upcoming dividends <span class="sub">— calendar</span></div></div>
-    <table>
-      <thead><tr><th>Company</th><th>Ticker</th><th>Type</th><th>Expected</th></tr></thead>
-      <tbody>
-        <tr><td><div class="tk-name">GCB Bank PLC</div></td><td class="tk">GCB</td><td>Interim dividend</td><td><span class="chip chip-gold">Q3 2026</span></td></tr>
-        <tr><td><div class="tk-name">MTN Ghana</div></td><td class="tk">MTNGH</td><td>Final dividend</td><td><span class="chip chip-gold">Q4 2026</span></td></tr>
-        <tr><td><div class="tk-name">SIC Insurance</div></td><td class="tk">SIC</td><td>Annual dividend</td><td><span class="chip chip-gold">Q1 2027</span></td></tr>
-        <tr><td><div class="tk-name">GOIL Company</div></td><td class="tk">GOIL</td><td>Final dividend</td><td><span class="chip chip-gold">Q4 2026</span></td></tr>
-        <tr><td><div class="tk-name">Ecobank Ghana</div></td><td class="tk">EGH</td><td>Corporate action / merger watch</td><td><span class="chip chip-neu">Monitor ETI</span></td></tr>
-      </tbody>
-    </table>
+    <div class="panel-head">
+      <div class="panel-title">GSE Dividend Calendar</div>
+      <a href="gse-events.html" class="btn btn-ghost btn-sm">View all GSE Events →</a>
+    </div>
+    <div id="calendar-wrap">
+      <div style="padding:28px;text-align:center;color:var(--text-faint);">
+        <span class="spinner-sm"></span> Loading dividend calendar…
+      </div>
+    </div>
   </div>
 </div>
+
 <div id="chrome-footer"></div>
 <script src="auth.js"></script>
 <script src="auth-guard.js"></script>
 <script src="data.js"></script>
 <script>
 mountChrome('dividends.html');
-const yieldMap={SIC:0.04,GCB:0.08,MTNGH:0.06,GOIL:0.05,ETI:0.02,EGH:0.07,RBGH:0.03,KASAPREKO:0.03,CAL:0.04};
-let totalDiv=0;
-const db=document.getElementById('div-body');
-holdings.slice().sort((a,b)=>b.value-a.value).forEach(h=>{
-  const y=yieldMap[h.ticker]??0.03, income=h.value*y;
-  totalDiv+=income;
-  db.innerHTML+=`<tr>
-    <td><div class="tk">${h.ticker}</div><div class="tk-name">${h.name}</div></td>
-    <td>${fmt(h.shares,0)}</td>
-    <td>GH₵${fmt(h.value,0)}</td>
-    <td><span class="chip chip-up">${fmt(y*100,1)}%</span></td>
-    <td style="color:var(--green-bright);">GH₵${fmt(income,0)}</td>
-  </tr>`;
-});
-document.getElementById('div-summary').innerHTML=`
-  <div class="stat-card"><div class="hero-label">Est. annual income</div><div class="big" style="color:var(--green-bright);">GH₵${fmt(totalDiv,0)}</div><div class="sub">From ${holdings.length} holdings</div></div>
-  <div class="stat-card"><div class="hero-label">Portfolio yield</div><div class="big">${fmt(totalDiv/totalValue*100,2)}%</div><div class="sub">Weighted average</div></div>
-  <div class="stat-card"><div class="hero-label">Monthly estimate</div><div class="big">GH₵${fmt(totalDiv/12,0)}</div><div class="sub">Spread across year</div></div>
-`;
-</script>
-  <script>
-    if('serviceWorker' in navigator){
-      window.addEventListener('load', ()=>{
-        navigator.serviceWorker.register('/sw.js')
-          .then(r=>console.log('[PWA] SW registered:', r.scope))
-          .catch(e=>console.log('[PWA] SW error:', e));
-      });
+
+// Yield map fallback for portfolio holdings
+const yieldMap = {
+  SIC:0.04, GCB:0.08, MTNGH:0.06, GOIL:0.05, ETI:0.02,
+  EGH:0.07, RBGH:0.03, KASAPREKO:0.03, KPLC:0.03, CAL:0.04,
+  SCB:0.065, EGL:0.055, GGBL:0.048, TOTAL:0.058, BOPP:0.052,
+  ACC:0.032, SOGEGH:0.038, FML:0.035, UNIL:0.042
+};
+
+// Render portfolio holdings dividend income
+function renderPortfolio(yieldOverrides){
+  const yMap = { ...yieldMap, ...yieldOverrides };
+  let totalDiv = 0;
+  const db = document.getElementById('div-body');
+  const rows = holdings.slice().sort((a,b)=>b.value-a.value);
+
+  if(!rows.length){
+    db.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text-faint);">No holdings yet — add stocks to your portfolio to see dividend estimates.</td></tr>';
+    document.getElementById('div-summary').innerHTML = `
+      <div class="stat-card"><div class="hero-label">Est. annual income</div><div class="big" style="color:var(--green-bright);">GH₵0</div><div class="sub">No holdings yet</div></div>
+      <div class="stat-card"><div class="hero-label">Portfolio yield</div><div class="big">—</div><div class="sub">No holdings</div></div>
+      <div class="stat-card"><div class="hero-label">Monthly estimate</div><div class="big">GH₵0</div><div class="sub">Spread across year</div></div>`;
+    return;
+  }
+
+  db.innerHTML = rows.map(h => {
+    const y = yMap[h.ticker] ?? 0.03;
+    const income = h.value * y;
+    totalDiv += income;
+    return `<tr>
+      <td><div class="tk">${h.ticker}</div><div class="tk-name">${h.name}</div></td>
+      <td>${fmt(h.shares,0)}</td>
+      <td>GH₵${fmt(h.value,0)}</td>
+      <td><span class="chip chip-up">${fmt(y*100,1)}%</span></td>
+      <td style="color:var(--green-bright);">GH₵${fmt(income,0)}</td>
+    </tr>`;
+  }).join('');
+
+  const safeYield = totalValue > 0 ? (totalDiv/totalValue*100) : 0;
+  document.getElementById('div-summary').innerHTML = `
+    <div class="stat-card"><div class="hero-label">Est. annual income</div><div class="big" style="color:var(--green-bright);">GH₵${fmt(totalDiv,0)}</div><div class="sub">From ${rows.length} holdings</div></div>
+    <div class="stat-card"><div class="hero-label">Portfolio yield</div><div class="big">${fmt(safeYield,2)}%</div><div class="sub">Weighted average</div></div>
+    <div class="stat-card"><div class="hero-label">Monthly estimate</div><div class="big">GH₵${fmt(totalDiv/12,0)}</div><div class="sub">Spread across year</div></div>`;
+}
+
+// Load GSE dividend calendar from Supabase
+async function loadDividendCalendar(){
+  const wrap = document.getElementById('calendar-wrap');
+  try{
+    const res = await fetch('/api/gse-data?table=dividends');
+    const data = await res.json();
+    const divs = data.data || [];
+
+    if(!divs.length){
+      wrap.innerHTML = `<div style="padding:28px;text-align:center;color:var(--text-faint);">
+        No dividend data yet. Check back soon or <a href="gse-events.html" style="color:var(--gold-bright);">view GSE Events</a>.
+      </div>`;
+      return;
     }
-  </script>
+
+    // Sort by ex-date
+    divs.sort((a,b)=>new Date(b.ex_date)-new Date(a.ex_date));
+
+    // Build yield override map from real dividend data
+    const yieldOverrides = {};
+    divs.forEach(d=>{ if(d.yield) yieldOverrides[d.ticker] = d.yield/100; });
+    renderPortfolio(yieldOverrides);
+
+    const maxYield = Math.max(...divs.map(d=>parseFloat(d.yield)||0));
+    const userTickers = new Set(holdings.map(h=>h.ticker));
+
+    wrap.innerHTML = `<table class="div-table">
+      <thead><tr>
+        <th>Company</th>
+        <th>Dividend (GH₵)</th>
+        <th>Yield</th>
+        <th>Ex-Date</th>
+        <th>Payment Date</th>
+        <th>Status</th>
+      </tr></thead>
+      <tbody>${divs.map(d=>{
+        const inPortfolio = userTickers.has(d.ticker) || userTickers.has('KASAPREKO') && d.ticker==='KPLC';
+        const exFmt  = new Date(d.ex_date).toLocaleDateString('en-GH',{day:'numeric',month:'short',year:'numeric'});
+        const payFmt = new Date(d.pay_date).toLocaleDateString('en-GH',{day:'numeric',month:'short',year:'numeric'});
+        const y = parseFloat(d.yield)||0;
+        const yieldBar = `<div class="yield-bar">
+          <span>${y}%</span>
+          <div style="flex:1;height:4px;background:var(--panel-3);border-radius:2px;max-width:80px;">
+            <div style="width:${maxYield>0?(y/maxYield*100):0}%;height:100%;background:var(--gold-bright);border-radius:2px;"></div>
+          </div>
+        </div>`;
+        const badge = d.status==='upcoming'
+          ? '<span class="status-badge badge-upcoming">⏳ Upcoming</span>'
+          : d.status==='confirmed'
+            ? '<span class="status-badge badge-confirmed">✓ Confirmed</span>'
+            : '<span class="status-badge badge-paid">✓ Paid</span>';
+        return `<tr ${inPortfolio?'class="in-portfolio"':''}>
+          <td>
+            <div style="font-weight:600;">${d.ticker}</div>
+            <div style="font-size:11.5px;color:var(--text-dim);">${d.company}</div>
+            ${inPortfolio?'<div style="font-size:10px;color:var(--gold-bright);">★ In your portfolio</div>':''}
+          </td>
+          <td><strong>GH₵${parseFloat(d.amount).toFixed(4)}</strong></td>
+          <td>${yieldBar}</td>
+          <td>${exFmt}</td>
+          <td>${payFmt}</td>
+          <td>${badge}</td>
+        </tr>`;
+      }).join('')}</tbody>
+    </table>`;
+
+  }catch(e){
+    wrap.innerHTML = `<div style="padding:28px;text-align:center;color:var(--text-faint);">Could not load dividend calendar. Try refreshing.</div>`;
+  }
+}
+
+// Initial render with hardcoded yields, then update with real data
+renderPortfolio({});
+loadDividendCalendar();
+</script>
+<script>
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('/sw.js')
+      .then(r=>console.log('[PWA] SW registered:', r.scope))
+      .catch(e=>console.log('[PWA] SW error:', e));
+  });
+}
+</script>
 </body></html>

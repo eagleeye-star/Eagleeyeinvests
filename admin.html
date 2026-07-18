@@ -605,23 +605,44 @@ async function updateGSECI(){
   sucEl.classList.remove('show');
   if(!val){ alert('Enter a GSE-CI value.'); return; }
 
-  // Update each setting key
+  const btn = document.querySelector('[onclick="updateGSECI()"]');
+  if(btn){ btn.disabled=true; btn.textContent='Updating…'; }
+
   const updates = [
-    {key:'gseci',value:val},
+    {key:'gseci',       value:val},
     {key:'gseci_change',value:chg||'—'},
     {key:'gseci_updated',value:label||new Date().toLocaleDateString('en-GH',{month:'short',year:'numeric'})},
   ];
+
+  let allOk = true;
   for(const u of updates){
-    await fetch(`/api/admin-gse?table=settings&key=${u.key}`,{
-      method:'PATCH',
-      headers:{'Content-Type':'application/json','X-Admin-Secret':adminSecret},
-      body:JSON.stringify({value:u.value}),
-    });
+    try{
+      const r = await fetch(`/api/admin-gse?table=settings&key=${u.key}`,{
+        method:'PATCH',
+        headers:{'Content-Type':'application/json','X-Admin-Secret':adminSecret},
+        body:JSON.stringify({value:u.value}),
+      });
+      if(!r.ok){ allOk=false; console.error('Failed to update',u.key, await r.text()); }
+    }catch(e){ allOk=false; console.error('Error updating',u.key,e); }
   }
-  document.getElementById('gseci-current').textContent=`Current: ${val} (${chg}) as of ${label}`;
-  sucEl.textContent='✓ GSE-CI updated successfully. It will appear on the site within 5 minutes.';
-  sucEl.classList.add('show');
-  setTimeout(()=>sucEl.classList.remove('show'),4000);
+
+  if(btn){ btn.disabled=false; btn.textContent='Update'; }
+
+  if(allOk){
+    document.getElementById('gseci-current').textContent=`Current: ${val} (${chg}) as of ${label}`;
+    sucEl.style.background='var(--green-fill)';
+    sucEl.style.color='var(--green-bright)';
+    sucEl.style.border='1px solid rgba(45,201,141,0.3)';
+    sucEl.textContent='✓ GSE-CI updated — changes live within 30 seconds.';
+    sucEl.classList.add('show');
+    setTimeout(()=>sucEl.classList.remove('show'),5000);
+  } else {
+    sucEl.style.background='var(--red-fill)';
+    sucEl.style.color='var(--red)';
+    sucEl.style.border='1px solid rgba(217,89,76,0.3)';
+    sucEl.textContent='⚠ Update failed. Check console for details.';
+    sucEl.classList.add('show');
+  }
 }
 
 async function saveDividend(){
