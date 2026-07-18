@@ -535,59 +535,49 @@ function renderReports(reports){
 // LOAD LIVE DATA FROM SUPABASE
 // Falls back to hardcoded data if API fails
 // ================================================================
+const SB_URL  = 'https://jyhamtniuhlsbwcdfspa.supabase.co';
+const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp5aGFtdG5pdWhsc2J3Y2Rmc3BhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxNjE1MTgsImV4cCI6MjA5NzczNzUxOH0.1nT-wpRjjAIpgUk_BDTlu3z4Cvuz_G0nKX9l65cwpF0';
+
+async function sbFetch(table){
+  const order = table === 'gse_settings' ? '' : '&order=created_at.desc';
+  const res = await fetch(`${SB_URL}/rest/v1/${table}?select=*${order}`, {
+    headers: { 'apikey': SB_ANON, 'Authorization': `Bearer ${SB_ANON}` }
+  });
+  return res.ok ? await res.json() : [];
+}
 async function loadGSEData(){
   try{
-    // Load dividends
-    const divRes = await fetch('/api/gse-data?table=dividends');
-    const divData = await divRes.json();
-    if(divData.data && divData.data.length > 0){
-      // Map Supabase column names to our format
-      window.DIVIDENDS_LIVE = divData.data.map(d=>({
-        company:  d.company,
-        ticker:   d.ticker,
-        amount:   parseFloat(d.amount),
-        yield:    parseFloat(d.yield)||0,
-        exDate:   d.ex_date,
-        payDate:  d.pay_date,
-        status:   d.status||'upcoming',
+    // Call Supabase directly — bypasses Vercel function routing
+    const divData    = await sbFetch('gse_dividends');
+    const ipoData    = await sbFetch('gse_ipos');
+    const rightsData = await sbFetch('gse_rights');
+
+    if(divData.length > 0){
+      window.DIVIDENDS_LIVE = divData.map(d=>({
+        company: d.company, ticker: d.ticker,
+        amount:  parseFloat(d.amount),
+        yield:   parseFloat(d.yield)||0,
+        exDate:  d.ex_date, payDate: d.pay_date,
+        status:  d.status||'upcoming',
       }));
     }
-
-    // Load IPOs
-    const ipoRes = await fetch('/api/gse-data?table=ipos');
-    const ipoData = await ipoRes.json();
-    if(ipoData.data && ipoData.data.length > 0){
-      window.IPOS_LIVE = ipoData.data.map(i=>({
-        company:       i.company,
-        ticker:        i.ticker||'',
-        sector:        i.sector||'',
-        status:        i.status||'upcoming',
-        offerPrice:    parseFloat(i.offer_price)||0,
-        sharesOffered: i.shares_offered||'',
-        amountRaised:  i.amount_raised||'',
-        openDate:      i.open_date||'',
-        closeDate:     i.close_date||'',
-        listingDate:   i.listing_date||'',
-        subscription:  i.subscription||'',
-        desc:          i.description||'',
+    if(ipoData.length > 0){
+      window.IPOS_LIVE = ipoData.map(i=>({
+        company: i.company, ticker: i.ticker||'', sector: i.sector||'',
+        status: i.status||'upcoming', offerPrice: parseFloat(i.offer_price)||0,
+        sharesOffered: i.shares_offered||'', amountRaised: i.amount_raised||'',
+        openDate: i.open_date||'', closeDate: i.close_date||'',
+        listingDate: i.listing_date||'', subscription: i.subscription||'',
+        desc: i.description||'',
       }));
     }
-
-    // Load rights issues
-    const rightsRes = await fetch('/api/gse-data?table=rights');
-    const rightsData = await rightsRes.json();
-    if(rightsData.data && rightsData.data.length > 0){
-      window.RIGHTS_LIVE = rightsData.data.map(r=>({
-        company:        r.company,
-        ticker:         r.ticker||'',
-        status:         r.status||'closed',
-        ratio:          r.ratio||'',
-        offerPrice:     parseFloat(r.offer_price)||0,
-        purpose:        r.purpose||'',
-        openDate:       r.open_date||'',
-        closeDate:      r.close_date||'',
-        amountTargeted: r.amount_targeted||'',
-        result:         r.result||'',
+    if(rightsData.length > 0){
+      window.RIGHTS_LIVE = rightsData.map(r=>({
+        company: r.company, ticker: r.ticker||'', status: r.status||'closed',
+        ratio: r.ratio||'', offerPrice: parseFloat(r.offer_price)||0,
+        purpose: r.purpose||'', openDate: r.open_date||'',
+        closeDate: r.close_date||'', amountTargeted: r.amount_targeted||'',
+        result: r.result||'',
       }));
     }
   }catch(e){

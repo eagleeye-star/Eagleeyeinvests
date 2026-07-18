@@ -110,13 +110,16 @@ function renderPortfolio(yieldOverrides){
     <div class="stat-card"><div class="hero-label">Monthly estimate</div><div class="big">GH₵${fmt(totalDiv/12,0)}</div><div class="sub">Spread across year</div></div>`;
 }
 
-// Load GSE dividend calendar from Supabase
+// Load GSE dividend calendar directly from Supabase
 async function loadDividendCalendar(){
   const wrap = document.getElementById('calendar-wrap');
   try{
-    const res = await fetch('/api/gse-data?table=dividends');
-    const data = await res.json();
-    const divs = data.data || [];
+    const SB_URL  = 'https://jyhamtniuhlsbwcdfspa.supabase.co';
+    const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp5aGFtdG5pdWhsc2J3Y2Rmc3BhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxNjE1MTgsImV4cCI6MjA5NzczNzUxOH0.1nT-wpRjjAIpgUk_BDTlu3z4Cvuz_G0nKX9l65cwpF0';
+    const res = await fetch(`${SB_URL}/rest/v1/gse_dividends?select=*&order=created_at.desc`, {
+      headers: { 'apikey': SB_ANON, 'Authorization': `Bearer ${SB_ANON}` }
+    });
+    const divs = res.ok ? await res.json() : [];
 
     if(!divs.length){
       wrap.innerHTML = `<div style="padding:28px;text-align:center;color:var(--text-faint);">
