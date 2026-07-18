@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — EagleEyE</title>
+<link rel="stylesheet" href="style.css">
+<script>document.documentElement.setAttribute("data-theme",localStorage.getItem("ee_theme")||"dark");</script>
+<style>
+.admin-login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:var(--bg);}
+.admin-card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:36px;width:100%;max-width:380px;}
+.field label{font-size:11px;color:var(--text-dim);display:block;margin-bottom:5px;font-weight:500;text-transform:uppercase;letter-spacing:0.05em;}
+.field input{width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;background:var(--panel-2);color:var(--text);font-family:var(--font-mono);margin-bottom:14px;}
+.field input:focus{outline:none;border-color:var(--gold-dim);}
+.admin-btn{width:100%;padding:11px;border-radius:var(--radius-sm);border:none;background:linear-gradient(150deg,var(--gold-bright),var(--gold));color:#1A1300;font-size:13px;font-weight:700;cursor:pointer;}
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px;}
+.stat-box{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius-sm);padding:16px;}
+.stat-box .lbl{font-size:10.5px;color:var(--text-faint);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px;}
+.stat-box .val{font-family:var(--font-display);font-size:26px;font-weight:600;}
+.plan-badge-free{background:var(--panel-3);color:var(--text-dim);font-size:11px;padding:2px 8px;border-radius:10px;font-family:var(--font-mono);}
+.plan-badge-premium{background:var(--gold-glow);color:var(--gold-bright);font-size:11px;padding:2px 8px;border-radius:10px;font-family:var(--font-mono);border:1px solid rgba(212,165,55,0.2);}
+.plan-badge-trial{background:var(--green-fill);color:var(--green-bright);font-size:11px;padding:2px 8px;border-radius:10px;font-family:var(--font-mono);}
+.confirm-badge{font-size:10px;padding:1px 6px;border-radius:8px;}
+.cb-yes{background:var(--green-fill);color:var(--green-bright);}
+.cb-no{background:var(--red-fill);color:var(--red);}
+.action-sel{background:var(--panel-2);border:1px solid var(--border);color:var(--text);padding:4px 8px;border-radius:5px;font-size:11px;cursor:pointer;}
+.alert-box{padding:10px 13px;border-radius:var(--radius-sm);font-size:12px;display:none;margin-bottom:14px;}
+.alert-box.show{display:block;}
+.alert-error{background:var(--red-fill);border:1px solid rgba(217,89,76,0.3);color:var(--red);}
+.alert-success{background:var(--green-fill);border:1px solid rgba(47,201,141,0.3);color:var(--green-bright);}
+.search-bar{background:var(--panel-2);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:var(--radius-sm);font-size:13px;width:220px;}
+.search-bar:focus{outline:none;border-color:var(--gold-dim);}
+.tab-bar{display:flex;gap:4px;margin-bottom:20px;background:var(--panel-2);padding:4px;border-radius:10px;width:fit-content;}
+.admin-tab{padding:8px 16px;border-radius:7px;border:none;background:none;color:var(--text-dim);cursor:pointer;font-size:12.5px;font-family:var(--font-body);font-weight:500;transition:all .15s;}
+.admin-tab.active{background:var(--panel);color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,0.2);}
+.chart-bar-row{display:flex;align-items:flex-end;gap:4px;height:80px;margin-bottom:6px;}
+.chart-bar{flex:1;background:var(--gold-dim);border-radius:3px 3px 0 0;min-height:2px;transition:height .3s;cursor:pointer;position:relative;}
+.chart-bar:hover{background:var(--gold-bright);}
+.chart-bar .tip{position:absolute;top:-24px;left:50%;transform:translateX(-50%);background:var(--panel-3);color:var(--text);font-size:10px;padding:2px 6px;border-radius:4px;white-space:nowrap;display:none;}
+.chart-bar:hover .tip{display:block;}
+.chart-labels{display:flex;gap:4px;font-size:9px;color:var(--text-faint);font-family:var(--font-mono);}
+.chart-label{flex:1;text-align:center;overflow:hidden;}
+.notify-form{background:var(--panel-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:18px;margin-bottom:16px;}
+.notify-form label{font-size:11px;color:var(--text-dim);display:block;margin-bottom:5px;font-weight:500;text-transform:uppercase;letter-spacing:0.05em;}
+.notify-form input,.notify-form select,.notify-form textarea{width:100%;padding:8px 11px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;background:var(--panel);color:var(--text);font-family:var(--font-body);margin-bottom:12px;}
+.notify-form textarea{resize:none;height:70px;}
+.sub-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border-soft);font-size:12.5px;}
+.sub-row:last-child{border-bottom:none;}
+@media(max-width:700px){.stat-grid{grid-template-columns:repeat(2,1fr);}}
+</style>
+</head>
+<body>
+
+<!-- Login screen -->
+<div id="admin-login" class="admin-login">
+  <div class="admin-card">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:28px;">
+      <div style="width:36px;height:36px;border-radius:9px;background:linear-gradient(150deg,var(--gold-bright),var(--gold));display:flex;align-items:center;justify-content:center;">
+        <svg viewBox="0 0 24 24" fill="none" width="19" height="19"><path d="M12 3C7 5 4 9 2 12c2 3 5 7 10 9 5-2 8-6 10-9-2-3-5-7-10-9z" stroke="#1A1300" stroke-width="1.8" stroke-linejoin="round"/><circle cx="12" cy="12" r="3" fill="#1A1300"/></svg>
+      </div>
+      <div><div style="font-family:var(--font-display);font-size:17px;font-weight:600;">EagleEyE</div><div style="font-size:10.5px;color:var(--text-faint);">Admin Dashboard</div></div>
+    </div>
+    <div style="font-family:var(--font-display);font-size:20px;font-weight:600;margin-bottom:4px;">Admin access</div>
+    <div style="font-size:12.5px;color:var(--text-dim);margin-bottom:22px;">Enter your admin secret key to continue.</div>
+    <div class="field"><label>Admin secret key</label><input type="password" id="secret-input" placeholder="Enter your secret key" onkeydown="if(event.key==='Enter')doLogin()"></div>
+    <div class="alert-box alert-error" id="login-err"></div>
+    <button class="admin-btn" onclick="doLogin()" id="login-btn">Access dashboard</button>
+  </div>
+</div>
+
+<!-- Dashboard -->
+<div id="admin-dashboard" style="display:none;">
+  <div class="wrap" style="padding-top:28px;padding-bottom:60px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px;">
+      <div>
+        <div style="font-family:var(--font-display);font-size:26px;font-weight:600;">Admin Dashboard</div>
+        <div style="font-size:13px;color:var(--text-dim);margin-top:4px;" id="last-refresh">Loading…</div>
+      </div>
+      <div style="display:flex;gap:10px;">
+        <button class="btn btn-ghost btn-sm" onclick="loadAll()">↻ Refresh</button>
+        <a href="index.html" class="btn btn-ghost btn-sm">← Site</a>
+      </div>
+    </div>
+
+    <!-- Stats grid -->
+    <div class="stat-grid" id="stat-grid">
+      <div class="stat-box"><div class="lbl">Total users</div><div class="val" id="s-total">—</div></div>
+      <div class="stat-box"><div class="lbl">Premium</div><div class="val" id="s-premium" style="color:var(--gold-bright);">—</div></div>
+      <div class="stat-box"><div class="lbl">On free trial</div><div class="val" id="s-trial" style="color:var(--green-bright);">—</div></div>
+      <div class="stat-box"><div class="lbl">Monthly revenue</div><div class="val" id="s-mrr" style="color:var(--green-bright);">—</div></div>
+      <div class="stat-box"><div class="lbl">Total revenue</div><div class="val" id="s-revenue">—</div></div>
+      <div class="stat-box"><div class="lbl">Active subs</div><div class="val" id="s-subs">—</div></div>
+      <div class="stat-box"><div class="lbl">Feedback</div><div class="val" id="s-feedback">—</div></div>
+      <div class="stat-box"><div class="lbl">Avg rating</div><div class="val" id="s-rating" style="color:var(--gold-bright);">—</div></div>
+    </div>
+
+    <!-- Signups chart -->
+    <div class="panel mb" style="margin-bottom:20px;">
+      <div class="panel-head"><div class="panel-title">Signups — last 14 days</div></div>
+      <div class="chart-bar-row" id="chart-bars"></div>
+      <div class="chart-labels" id="chart-labels"></div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tab-bar">
+      <button class="admin-tab active" onclick="showTab('users',this)">👥 Users</button>
+      <button class="admin-tab" onclick="showTab('subscriptions',this)">💳 Subscriptions</button>
+      <button class="admin-tab" onclick="showTab('feedback',this)">💬 Feedback</button>
+      <button class="admin-tab" onclick="showTab('gse',this)">📊 GSE Data</button>
+      <button class="admin-tab" onclick="showTab('notifications',this)">🔔 Notifications</button>
+    </div>
+
+    <!-- USERS TAB -->
+    <div id="tab-users">
+      <div class="panel">
+        <div class="panel-head">
+          <div class="panel-title">All users <span class="sub" id="user-count"></span></div>
+          <input class="search-bar" id="user-search" placeholder="Search name or email…" oninput="filterUsers()">
+        </div>
+        <div class="alert-box alert-error" id="admin-error"></div>
+        <div class="alert-box alert-success" id="admin-success"></div>
+        <table>
+          <thead><tr><th>Name</th><th>Email</th><th>Plan</th><th>Trial ends</th><th>Joined</th><th>Last login</th><th>Action</th></tr></thead>
+          <tbody id="users-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- SUBSCRIPTIONS TAB -->
+    <div id="tab-subscriptions" style="display:none;">
+      <div class="panel">
+        <div class="panel-head"><div class="panel-title">Active subscriptions <span class="sub" id="subs-count"></span></div></div>
+        <div id="subs-list"><div style="color:var(--text-faint);font-size:13px;padding:20px;">Loading…</div></div>
+      </div>
+    </div>
+
+    <!-- FEEDBACK TAB -->
+    <div id="tab-feedback" style="display:none;">
+      <div class="panel">
+        <div class="panel-head">
+          <div class="panel-title">User feedback <span class="sub" id="fb-count"></span></div>
+          <div style="display:flex;gap:10px;align-items:center;">
+            <span style="font-size:12px;color:var(--text-dim);">Avg: <span id="fb-avg" style="color:var(--gold-bright);font-weight:600;">—</span></span>
+            <input class="search-bar" id="fb-search" placeholder="Search feedback…" oninput="filterFeedback()" style="width:180px;">
+          </div>
+        </div>
+        <table>
+          <thead><tr><th>Rating</th><th>Category</th><th>Message</th><th>Page</th><th>Email</th><th>Date</th></tr></thead>
+          <tbody id="feedback-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- GSE DATA TAB -->
+    <div id="tab-gse" style="display:none;">
+
+      <!-- GSE-CI Update -->
+      <div class="panel" style="margin-bottom:18px;">
+        <div class="panel-head"><div class="panel-title">📈 GSE-CI Index</div></div>
+        <div style="padding:18px;display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:12px;align-items:end;">
+          <div>
+            <div style="font-size:11px;color:var(--text-dim);margin-bottom:5px;text-transform:uppercase;letter-spacing:0.04em;">Index Value</div>
+            <input type="number" id="gseci-val" placeholder="e.g. 14647" class="search-bar" style="width:100%;">
+          </div>
+          <div>
+            <div style="font-size:11px;color:var(--text-dim);margin-bottom:5px;text-transform:uppercase;letter-spacing:0.04em;">Change (e.g. +0.38%)</div>
+            <input type="text" id="gseci-chg" placeholder="e.g. +0.38%" class="search-bar" style="width:100%;">
+          </div>
+          <div>
+            <div style="font-size:11px;color:var(--text-dim);margin-bottom:5px;text-transform:uppercase;letter-spacing:0.04em;">Label (e.g. Jul 2026)</div>
+            <input type="text" id="gseci-label" placeholder="e.g. Jul 2026" class="search-bar" style="width:100%;">
+          </div>
+          <button class="btn btn-gold" onclick="updateGSECI()">Update</button>
+        </div>
+        <div style="padding:0 18px 14px;font-size:12px;color:var(--text-faint);" id="gseci-current">Loading current value…</div>
+        <div class="alert-box alert-success" id="gseci-success" style="margin:0 18px 14px;"></div>
+      </div>
+
+      <!-- Dividends -->
+      <div class="panel" style="margin-bottom:18px;">
+        <div class="panel-head">
+          <div class="panel-title">📅 Dividends</div>
+          <button class="btn btn-gold btn-sm" onclick="toggleForm('div-form')">+ Add Dividend</button>
+        </div>
+        <div id="div-form" style="display:none;padding:18px;background:var(--panel-2);border-bottom:1px solid var(--border);">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+            <div><label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:4px;">Company</label><input type="text" id="div-company" placeholder="GCB Bank Ltd" class="search-bar" style="width:100%;"></div>
+            <div><label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:4px;">Ticker</label><input type="text" id="div-ticker" placeholder="GCB" class="search-bar" style="width:100%;"></div>
+            <div><label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:4px;">Amount (GH₵)</label><input type="number" id="div-amount" placeholder="2.80" step="0.0001" class="search-bar" style="width:100%;"></div>
+            <div><label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:4px;">Yield (%)</label><input type="number" id="div-yield" placeholder="8.0" step="0.1" class="search-bar" style="width:100%;"></div>
+            <div><label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:4px;">Ex-Date</label><input type="date" id="div-exdate" class="search-bar" style="width:100%;"></div>
+            <div><label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:4px;">Payment Date</label><input type="date" id="div-paydate" class="search-bar" style="width:100%;"></div>
+          </div>
+          <div style="margin-bottom:12px;"><label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:4px;">Status</label>
+            <select id="div-status" class="search-bar" style="width:200px;">
+              <option value="upcoming">Upcoming</option>
+              <option value="confirmed">Confirmed</option>
+              <option value="paid">Paid</option>
+            </select>
+          </div>
+          <div class="alert-box alert-error" id="div-err"></div>
+          <button class="btn btn-gold" onclick="saveDividend()">Save Dividend</button>
+          <button class="btn btn-ghost" onclick="toggleForm('div-form')" style="margin-left:8px;">Cancel</button>
+        </div>
+        <div id="div-list" style="padding:14px 18px;"><div style="font-size:13px;color:var(--text-faint);">Loading…</div></div>
+      </div>
+
+      <!-- IPOs -->
+      <div class="panel" style="margin-bottom:18px;">
+        <div class="panel-head">
+          <div class="panel-title">🚀 IPOs</div>
+          <button class="btn btn-gold btn-sm" onclick="toggleForm('ipo-form')">+ Add IPO</button>
+        </div>
+        <div id="ipo-form" style="display:none;padding:18px;background:var(--panel-2);border-bottom:1px solid var(--border);">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+            <div><label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:4px;">Company</label><input type="text" id="ipo-company" placeholder="Kasapreko Company PLC" class="search-bar" style="width:100%;"></div>
+            <div><label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:4px;">Ticker</label><input type="text" id="ipo-ticker" placeholder="KPLC" class="search-bar" style="width:100%;"></div>
+            <div><label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:4px;">Sector</label><input type="text" id="ipo-sector" placeholder="Consumer Goods" class="search-bar" style="width:100%;"></div>
+            <div><label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:4px;">Offer Price (GH₵)</label><input type="number" id="ipo-price" step="0.01" class="search-bar" style="width:100%;"></div>
+            <div><label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:4px;">Shares Offered</label><input type="text" id="ipo-shares" placeholder="3.76 billion" class="search-bar" style="width:100%;"></div>
+            <div><label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:4px;">Amount Raised</label><input type="text" id="ipo-raised" placeholder="GH₵1.72 billion" class="search-bar" style="width:100%;"></div>
+            <div><label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:4px;">Open Date</label><input type="date" id="ipo-open" class="search-bar" style="width:100%;"></div>
+            <div><label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:4px;">Close Date</label><input type="date" id="ipo-close" class="search-bar" style="width:100%;"></div>
+            <div><label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:4px;">Listing Date</label><input type="date" id="ipo-listing" class="search-bar" style="width:100%;"></div>
+            <div><label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:4px;">Subscription Status</label><input type="text" id="ipo-sub" placeholder="Oversubscribed" class="search-bar" style="width:100%;"></div>
+          </div>
+          <div style="margin-bottom:12px;"><label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:4px;">Status</label>
+            <select id="ipo-status" class="search-bar" style="width:200px;">
+              <option value="upcoming">Upcoming</option>
+              <option value="recent">Recently Listed</option>
+              <option value="closed">Closed</option>
+            </select>
+          </div>
+          <div style="margin-bottom:12px;"><label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:4px;">Description</label>
+            <textarea id="ipo-desc" placeholder="Brief description of the company and IPO…" style="width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;background:var(--panel);color:var(--text);height:80px;resize:none;font-family:var(--font-body);"></textarea>
+          </div>
+          <div class="alert-box alert-error" id="ipo-err"></div>
+          <button class="btn btn-gold" onclick="saveIPO()">Save IPO</button>
+          <button class="btn btn-ghost" onclick="toggleForm('ipo-form')" style="margin-left:8px;">Cancel</button>
+        </div>
+        <div id="ipo-list" style="padding:14px 18px;"><div style="font-size:13px;color:var(--text-faint);">Loading…</div></div>
+      </div>
+
+      <!-- Rights Issues -->
+      <div class="panel">
+        <div class="panel-head">
+          <div class="panel-title">📋 Rights Issues</div>
+          <button class="btn btn-gold btn-sm" onclick="toggleForm('rights-form')">+ Add Rights Issue</button>
+        </div>
+        <div id="rights-form" style="display:none;padding:18px;background:var(--panel-2);border-bottom:1px solid var(--border);">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+            <div><label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:4px;">Company</label><input type="text" id="ri-company" placeholder="CalBank PLC" class="search-bar" style="width:100%;"></div>
+            <div><label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:4px;">Ticker</label><input type="text" id="ri-ticker" placeholder="CAL" class="search-bar" style="width:100%;"></div>
+            <div><label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:4px;">Ratio</label><input type="text" id="ri-ratio" placeholder="1 for 2" class="search-bar" style="width:100%;"></div>
+            <div><label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:4px;">Offer Price (GH₵)</label><input type="number" id="ri-price" step="0.01" class="search-bar" style="width:100%;"></div>
+            <div><label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:4px;">Amount Targeted</label><input type="text" id="ri-amount" placeholder="GH₵171M" class="search-bar" style="width:100%;"></div>
+            <div><label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:4px;">Result</label><input type="text" id="ri-result" placeholder="Fully subscribed" class="search-bar" style="width:100%;"></div>
+            <div><label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:4px;">Open Date</label><input type="date" id="ri-open" class="search-bar" style="width:100%;"></div>
+            <div><label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:4px;">Close Date</label><input type="date" id="ri-close" class="search-bar" style="width:100%;"></div>
+          </div>
+          <div style="margin-bottom:12px;"><label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:4px;">Purpose</label>
+            <textarea id="ri-purpose" placeholder="Why is the company raising funds?" style="width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;background:var(--panel);color:var(--text);height:70px;resize:none;font-family:var(--font-body);"></textarea>
+          </div>
+          <div style="margin-bottom:12px;"><label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:4px;">Status</label>
+            <select id="ri-status" class="search-bar" style="width:200px;">
+              <option value="active">Active</option>
+              <option value="closed">Closed</option>
+            </select>
+          </div>
+          <div class="alert-box alert-error" id="ri-err"></div>
+          <button class="btn btn-gold" onclick="saveRights()">Save Rights Issue</button>
+          <button class="btn btn-ghost" onclick="toggleForm('rights-form')" style="margin-left:8px;">Cancel</button>
+        </div>
+        <div id="rights-list" style="padding:14px 18px;"><div style="font-size:13px;color:var(--text-faint);">Loading…</div></div>
+      </div>
+    </div>
+
+    <!-- NOTIFICATIONS TAB -->
+    <div id="tab-notifications" style="display:none;">
+      <div class="panel">
+        <div class="panel-head"><div class="panel-title">Send push notification</div></div>
+        <div class="notify-form">
+          <label>Send to</label>
+          <select id="n-target">
+            <option value="all">All users</option>
+            <option value="premium">Premium users only</option>
+            <option value="user">Specific user (enter ID below)</option>
+          </select>
+          <label>User ID (if specific)</label>
+          <input type="text" id="n-userid" placeholder="User UUID from users table">
+          <label>Title</label>
+          <input type="text" id="n-title" placeholder="e.g. Market is now open">
+          <label>Message</label>
+          <textarea id="n-body" placeholder="e.g. GSE trading session has begun. Check your alerts."></textarea>
+          <label>Link URL (optional)</label>
+          <input type="text" id="n-url" placeholder="https://project-95ar2.vercel.app/dashboard.html">
+          <div class="alert-box alert-error" id="n-error"></div>
+          <div class="alert-box alert-success" id="n-success"></div>
+          <button class="btn btn-gold" onclick="sendNotification()">Send notification</button>
+        </div>
+        <div style="font-size:12px;color:var(--text-faint);padding:8px 0;">Note: Push notifications only reach users who have enabled them on a compatible browser (Chrome, Edge, Android). Not supported on iOS Safari.</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script src="data.js"></script>
+<script>
+let adminSecret='', allUsers=[], allFeedback=[], statsData=null;
+
+function doLogin(){
+  const secret=document.getElementById('secret-input').value.trim();
+  if(!secret){showLoginErr('Enter your secret key.');return;}
+  const btn=document.getElementById('login-btn');
+  btn.disabled=true; btn.textContent='Verifying…';
+  adminSecret=secret;
+  loadAll().then(ok=>{
+    if(!ok){adminSecret='';showLoginErr('Incorrect secret key.');btn.disabled=false;btn.textContent='Access dashboard';}
+  });
+}
+function showLoginErr(msg){const el=document.getElementById('login-err');el.textContent=msg;el.classList.add('show');}
+
+async function loadAll(){
+  const [statsOk, usersOk] = await Promise.all([loadStats(), loadUsers()]);
+  if(!statsOk||!usersOk) return false;
+  document.getElementById('admin-login').style.display='none';
+  document.getElementById('admin-dashboard').style.display='block';
+  document.getElementById('last-refresh').textContent='Last refreshed: '+new Date().toLocaleTimeString('en-GH',{hour:'2-digit',minute:'2-digit'});
+  return true;
+}
+
+// ===== STATS =====
+async function loadStats(){
+  try{
+    const res=await fetch('/api/admin-stats',{headers:{'X-Admin-Secret':adminSecret}});
+    if(res.status===403) return false;
+    const d=await res.json();
+    if(!d.users) return false;
+    statsData=d;
+    document.getElementById('s-total').textContent=d.users.total;
+    document.getElementById('s-premium').textContent=d.users.premium;
+    document.getElementById('s-trial').textContent=d.users.onTrial;
+    document.getElementById('s-mrr').textContent='GH₵'+fmt(d.revenue.mrr,0);
+    document.getElementById('s-revenue').textContent='GH₵'+fmt(d.revenue.total,0);
+    document.getElementById('s-subs').textContent=d.revenue.activeSubs;
+    document.getElementById('s-feedback').textContent=d.feedback.total;
+    document.getElementById('s-rating').textContent=d.feedback.avgRating?d.feedback.avgRating+' ★':'—';
+    renderChart(d.signupsPerDay);
+    renderSubs(d.subscriptions||[]);
+    return true;
+  }catch(e){return false;}
+}
+
+function renderChart(data){
+  const entries=Object.entries(data);
+  const maxVal=Math.max(...entries.map(([,v])=>v),1);
+  const bars=document.getElementById('chart-bars');
+  const labels=document.getElementById('chart-labels');
+  bars.innerHTML=''; labels.innerHTML='';
+  entries.forEach(([date,count])=>{
+    const pct=Math.round((count/maxVal)*100);
+    const label=new Date(date).toLocaleDateString('en-GH',{month:'short',day:'numeric'});
+    bars.innerHTML+=`<div class="chart-bar" style="height:${Math.max(pct,2)}%">
+      <div class="tip">${label}: ${count}</div>
+    </div>`;
+    labels.innerHTML+=`<div class="chart-label">${label.split(' ')[1]}</div>`;
+  });
+}
+
+// ===== USERS =====
+async function loadUsers(){
+  try{
+    const res=await fetch('/api/admin-users',{headers:{'X-Admin-Secret':adminSecret}});
+    if(res.status===403) return false;
+    const d=await res.json();
+    if(!d.users) return false;
+    allUsers=d.users;
+    document.getElementById('user-count').textContent='('+allUsers.length+' users)';
+    renderUsers(allUsers);
+    return true;
+  }catch(e){return false;}
+}
+
+function renderUsers(users){
+  const tbody=document.getElementById('users-body');
+  tbody.innerHTML='';
+  const now=new Date();
+  if(!users.length){tbody.innerHTML='<tr><td colspan="7" style="text-align:center;padding:28px;color:var(--text-faint);">No users found.</td></tr>';return;}
+  users.forEach(u=>{
+    const joined=u.created_at?new Date(u.created_at).toLocaleDateString('en-GH',{day:'numeric',month:'short',year:'numeric'}):'-';
+    const lastLogin=u.last_sign_in?new Date(u.last_sign_in).toLocaleDateString('en-GH',{day:'numeric',month:'short'}):'Never';
+    const trialEnds=u.trial_ends_at?new Date(u.trial_ends_at):null;
+    const onTrial=trialEnds&&trialEnds>now&&u.plan!=='premium';
+    const trialText=trialEnds?(onTrial?'Ends '+trialEnds.toLocaleDateString('en-GH',{day:'numeric',month:'short'}):'Expired'):'—';
+    const planBadge=u.plan==='premium'
+      ?`<span class="plan-badge-premium">⭑ Premium</span>`
+      :onTrial
+        ?`<span class="plan-badge-trial">⏳ Trial</span>`
+        :`<span class="plan-badge-free">Free</span>`;
+    tbody.innerHTML+=`<tr>
+      <td><div style="font-size:13px;font-weight:500;">${u.first_name||''} ${u.last_name||''}</div></td>
+      <td style="font-family:var(--font-mono);font-size:12px;">${u.email||'—'}</td>
+      <td>${planBadge}</td>
+      <td style="font-family:var(--font-mono);font-size:11px;color:${onTrial?'var(--green-bright)':'var(--text-faint)'};">${trialText}</td>
+      <td style="font-family:var(--font-mono);font-size:11.5px;">${joined}</td>
+      <td style="font-family:var(--font-mono);font-size:11.5px;">${lastLogin}</td>
+      <td>
+        <select class="action-sel" onchange="updatePlan('${u.id}',this.value,this)">
+          <option value="" disabled selected>Change plan…</option>
+          <option value="premium" ${u.plan==='premium'?'disabled':''}>→ Set Premium</option>
+          <option value="free" ${u.plan==='free'?'disabled':''}>→ Set Free</option>
+        </select>
+      </td>
+    </tr>`;
+  });
+}
+
+function filterUsers(){
+  const q=(document.getElementById('user-search').value||'').toLowerCase();
+  renderUsers(allUsers.filter(u=>!q||(u.first_name+' '+u.last_name).toLowerCase().includes(q)||(u.email||'').toLowerCase().includes(q)));
+}
+
+async function updatePlan(userId,plan,sel){
+  if(!plan) return;
+  const errEl=document.getElementById('admin-error'),sucEl=document.getElementById('admin-success');
+  errEl.classList.remove('show');sucEl.classList.remove('show');
+  try{
+    const res=await fetch('/api/admin-users',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Secret':adminSecret},body:JSON.stringify({user_id:userId,plan})});
+    const d=await res.json();
+    if(!res.ok){errEl.textContent=d.error||'Could not update.';errEl.classList.add('show');}
+    else{sucEl.textContent='Plan updated to '+plan+'.';sucEl.classList.add('show');setTimeout(()=>{sucEl.classList.remove('show');loadUsers();},1500);}
+  }catch{errEl.textContent='Network error.';errEl.classList.add('show');}
+  sel.value='';
+}
+
+// ===== SUBSCRIPTIONS =====
+function renderSubs(subs){
+  document.getElementById('subs-count').textContent='('+subs.length+' active)';
+  const el=document.getElementById('subs-list');
+  if(!subs.length){el.innerHTML='<div style="color:var(--text-faint);font-size:13px;padding:20px;">No active subscriptions yet.</div>';return;}
+  el.innerHTML=subs.map(s=>{
+    const started=s.started_at?new Date(s.started_at).toLocaleDateString('en-GH',{day:'numeric',month:'short',year:'numeric'}):'-';
+    const expires=s.expires_at?new Date(s.expires_at).toLocaleDateString('en-GH',{day:'numeric',month:'short',year:'numeric'}):'-';
+    return `<div class="sub-row">
+      <div><div style="font-size:13px;font-weight:500;">${s.paystack_ref||'—'}</div><div style="font-size:11px;color:var(--text-faint);margin-top:2px;">User: ${s.user_id?.substring(0,12)}…</div></div>
+      <span class="plan-badge-premium">${s.plan||'—'}</span>
+      <div style="font-size:12px;color:var(--text-dim);font-family:var(--font-mono);">GH₵${fmt(s.amount||0,2)}</div>
+      <div style="font-size:11.5px;color:var(--text-faint);font-family:var(--font-mono);">${started} → ${expires}</div>
+      <span class="confirm-badge ${s.status==='active'?'cb-yes':'cb-no'}">${s.status}</span>
+    </div>`;
+  }).join('');
+}
+
+// ===== FEEDBACK =====
+async function loadFeedback(){
+  try{
+    const res=await fetch('/api/admin-feedback',{headers:{'X-Admin-Secret':adminSecret}});
+    const d=await res.json();
+    allFeedback=d.feedback||[];
+    document.getElementById('fb-count').textContent='('+allFeedback.length+' submissions)';
+    document.getElementById('fb-avg').textContent=d.stats?.avgRating?d.stats.avgRating+' / 5':'—';
+    renderFeedback(allFeedback);
+  }catch{}
+}
+
+function renderFeedback(items){
+  const tb=document.getElementById('feedback-body');
+  tb.innerHTML='';
+  if(!items.length){tb.innerHTML='<tr><td colspan="6" style="text-align:center;padding:28px;color:var(--text-faint);">No feedback yet.</td></tr>';return;}
+  items.forEach(f=>{
+    const stars=f.rating?'★'.repeat(f.rating)+'☆'.repeat(5-f.rating):'—';
+    const date=f.created_at?new Date(f.created_at).toLocaleDateString('en-GH',{day:'numeric',month:'short',year:'numeric'}):'-';
+    tb.innerHTML+=`<tr>
+      <td style="color:var(--gold-bright);font-family:var(--font-mono);font-size:13px;white-space:nowrap;">${stars}</td>
+      <td><span class="plan-badge-free">${f.category||'General'}</span></td>
+      <td style="font-size:12.5px;max-width:280px;">${f.message||''}</td>
+      <td style="font-family:var(--font-mono);font-size:11px;color:var(--text-faint);">${f.page||'—'}</td>
+      <td style="font-family:var(--font-mono);font-size:11px;color:var(--text-faint);">${f.email||'—'}</td>
+      <td style="font-family:var(--font-mono);font-size:11.5px;">${date}</td>
+    </tr>`;
+  });
+}
+
+function filterFeedback(){
+  const q=(document.getElementById('fb-search').value||'').toLowerCase();
+  renderFeedback(allFeedback.filter(f=>!q||f.message?.toLowerCase().includes(q)||(f.email||'').toLowerCase().includes(q)||(f.category||'').toLowerCase().includes(q)));
+}
+
+// ===== NOTIFICATIONS =====
+async function sendNotification(){
+  const target=document.getElementById('n-target').value;
+  const userId=document.getElementById('n-userid').value.trim();
+  const title=document.getElementById('n-title').value.trim();
+  const body=document.getElementById('n-body').value.trim();
+  const url=document.getElementById('n-url').value.trim();
+  const errEl=document.getElementById('n-error'),sucEl=document.getElementById('n-success');
+  errEl.classList.remove('show');sucEl.classList.remove('show');
+  if(!title||!body){errEl.textContent='Title and message are required.';errEl.classList.add('show');return;}
+  if(target==='user'&&!userId){errEl.textContent='Enter a user ID for specific user notification.';errEl.classList.add('show');return;}
+  try{
+    const res=await fetch('/api/push-send',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','X-Admin-Secret':adminSecret},
+      body:JSON.stringify({user_id:target==='user'?userId:null,type:'admin',title,body,url:url||window.location.origin+'/dashboard.html'})
+    });
+    const d=await res.json();
+    if(!res.ok){errEl.textContent=d.error||'Could not send.';errEl.classList.add('show');}
+    else{sucEl.textContent=`Sent to ${d.sent||0} subscribers.`;sucEl.classList.add('show');}
+  }catch{errEl.textContent='Network error.';errEl.classList.add('show');}
+}
+
+// ===== TABS =====
+function showTab(name,btn){
+  ['users','subscriptions','feedback','gse','notifications'].forEach(t=>{
+    const el=document.getElementById('tab-'+t);
+    if(el) el.style.display=t===name?'block':'none';
+  });
+  document.querySelectorAll('.admin-tab').forEach(b=>b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  if(name==='feedback'&&!allFeedback.length) loadFeedback();
+  if(name==='gse') loadGSEAdmin();
+}
+
+// ===== GSE DATA MANAGEMENT =====
+function toggleForm(id){
+  const el=document.getElementById(id);
+  el.style.display=el.style.display==='none'?'block':'none';
+}
+
+async function loadGSEAdmin(){
+  // Load current GSE-CI
+  try{
+    const r=await fetch('/api/gse-data?table=settings');
+    const d=await r.json();
+    const settings={};
+    (d.data||[]).forEach(s=>{ settings[s.key]=s.value; });
+    document.getElementById('gseci-val').value=settings.gseci||'';
+    document.getElementById('gseci-chg').value=settings.gseci_change||'';
+    document.getElementById('gseci-label').value=settings.gseci_updated||'';
+    document.getElementById('gseci-current').textContent=
+      `Current: ${settings.gseci||'—'} (${settings.gseci_change||'—'}) as of ${settings.gseci_updated||'—'}`;
+  }catch(e){}
+
+  // Load dividends list
+  loadGSEList('dividends','div-list',renderDivList);
+  loadGSEList('ipos','ipo-list',renderIPOList);
+  loadGSEList('rights','rights-list',renderRightsList);
+}
+
+async function loadGSEList(table, elId, renderFn){
+  const el=document.getElementById(elId);
+  try{
+    const r=await fetch('/api/gse-data?table='+table);
+    const d=await r.json();
+    renderFn(d.data||[], el);
+  }catch(e){ el.innerHTML='<div style="color:var(--red);font-size:12px;">Failed to load.</div>'; }
+}
+
+function renderDivList(items, el){
+  if(!items.length){ el.innerHTML='<div style="font-size:12px;color:var(--text-faint);">No dividends added yet.</div>'; return; }
+  el.innerHTML=`<table style="width:100%;border-collapse:collapse;font-size:12.5px;">
+    <thead><tr style="background:var(--panel-2);">
+      <th style="padding:8px;text-align:left;">Ticker</th><th style="padding:8px;text-align:left;">Company</th>
+      <th style="padding:8px;">Amount</th><th style="padding:8px;">Ex-Date</th>
+      <th style="padding:8px;">Status</th><th style="padding:8px;"></th>
+    </tr></thead>
+    <tbody>${items.map(d=>`<tr style="border-top:1px solid var(--border-soft);">
+      <td style="padding:8px;font-family:var(--font-mono);font-weight:700;">${d.ticker}</td>
+      <td style="padding:8px;">${d.company}</td>
+      <td style="padding:8px;text-align:center;font-family:var(--font-mono);">GH₵${parseFloat(d.amount).toFixed(4)}</td>
+      <td style="padding:8px;text-align:center;font-family:var(--font-mono);">${d.ex_date}</td>
+      <td style="padding:8px;text-align:center;"><span class="plan-badge-${d.status==='paid'?'free':d.status==='confirmed'?'premium':'trial'}">${d.status}</span></td>
+      <td style="padding:8px;text-align:right;"><button onclick="deleteGSE('dividends','${d.id}','div-list',renderDivList)" class="icon-btn del">✕</button></td>
+    </tr>`).join('')}</tbody>
+  </table>`;
+}
+
+function renderIPOList(items, el){
+  if(!items.length){ el.innerHTML='<div style="font-size:12px;color:var(--text-faint);">No IPOs added yet.</div>'; return; }
+  el.innerHTML=items.map(i=>`<div style="padding:10px 0;border-bottom:1px solid var(--border-soft);display:flex;justify-content:space-between;align-items:center;font-size:12.5px;">
+    <div><span style="font-family:var(--font-mono);font-weight:700;">${i.ticker||'—'}</span> ${i.company} <span style="color:var(--text-faint);">${i.status}</span></div>
+    <button onclick="deleteGSE('ipos','${i.id}','ipo-list',renderIPOList)" class="icon-btn del">✕</button>
+  </div>`).join('');
+}
+
+function renderRightsList(items, el){
+  if(!items.length){ el.innerHTML='<div style="font-size:12px;color:var(--text-faint);">No rights issues added yet.</div>'; return; }
+  el.innerHTML=items.map(r=>`<div style="padding:10px 0;border-bottom:1px solid var(--border-soft);display:flex;justify-content:space-between;align-items:center;font-size:12.5px;">
+    <div><span style="font-family:var(--font-mono);font-weight:700;">${r.ticker||'—'}</span> ${r.company} · ${r.ratio||'—'} @ GH₵${r.offer_price||'—'} <span style="color:var(--text-faint);">${r.status}</span></div>
+    <button onclick="deleteGSE('rights','${r.id}','rights-list',renderRightsList)" class="icon-btn del">✕</button>
+  </div>`).join('');
+}
+
+async function deleteGSE(table, id, listId, renderFn){
+  if(!confirm('Delete this entry?')) return;
+  await fetch(`/api/admin-gse?table=${table}&id=${id}`,{method:'DELETE',headers:{'X-Admin-Secret':adminSecret}});
+  loadGSEList(table, listId, renderFn);
+}
+
+async function updateGSECI(){
+  const val   = document.getElementById('gseci-val').value.trim();
+  const chg   = document.getElementById('gseci-chg').value.trim();
+  const label = document.getElementById('gseci-label').value.trim();
+  const sucEl = document.getElementById('gseci-success');
+  sucEl.classList.remove('show');
+  if(!val){ alert('Enter a GSE-CI value.'); return; }
+
+  const btn = document.querySelector('[onclick="updateGSECI()"]');
+  if(btn){ btn.disabled=true; btn.textContent='Updating…'; }
+
+  const updates = [
+    {key:'gseci',       value:val},
+    {key:'gseci_change',value:chg||'—'},
+    {key:'gseci_updated',value:label||new Date().toLocaleDateString('en-GH',{month:'short',year:'numeric'})},
+  ];
+
+  let allOk = true;
+  for(const u of updates){
+    try{
+      const r = await fetch(`/api/admin-gse?table=settings&key=${u.key}`,{
+        method:'PATCH',
+        headers:{'Content-Type':'application/json','X-Admin-Secret':adminSecret},
+        body:JSON.stringify({value:u.value}),
+      });
+      if(!r.ok){ allOk=false; console.error('Failed to update',u.key, await r.text()); }
+    }catch(e){ allOk=false; console.error('Error updating',u.key,e); }
+  }
+
+  if(btn){ btn.disabled=false; btn.textContent='Update'; }
+
+  if(allOk){
+    document.getElementById('gseci-current').textContent=`Current: ${val} (${chg}) as of ${label}`;
+    sucEl.style.background='var(--green-fill)';
+    sucEl.style.color='var(--green-bright)';
+    sucEl.style.border='1px solid rgba(45,201,141,0.3)';
+    sucEl.textContent='✓ GSE-CI updated — changes live within 30 seconds.';
+    sucEl.classList.add('show');
+    setTimeout(()=>sucEl.classList.remove('show'),5000);
+  } else {
+    sucEl.style.background='var(--red-fill)';
+    sucEl.style.color='var(--red)';
+    sucEl.style.border='1px solid rgba(217,89,76,0.3)';
+    sucEl.textContent='⚠ Update failed. Check console for details.';
+    sucEl.classList.add('show');
+  }
+}
+
+async function saveDividend(){
+  const body={
+    company:   document.getElementById('div-company').value.trim(),
+    ticker:    document.getElementById('div-ticker').value.trim().toUpperCase(),
+    amount:    parseFloat(document.getElementById('div-amount').value),
+    yield:     parseFloat(document.getElementById('div-yield').value)||0,
+    ex_date:   document.getElementById('div-exdate').value,
+    pay_date:  document.getElementById('div-paydate').value,
+    status:    document.getElementById('div-status').value,
+  };
+  const errEl=document.getElementById('div-err');
+  errEl.classList.remove('show');
+  if(!body.company||!body.ticker||!body.amount||!body.ex_date||!body.pay_date){
+    errEl.textContent='Please fill in all required fields.';errEl.classList.add('show');return;
+  }
+  const r=await fetch('/api/admin-gse?table=dividends',{
+    method:'POST',headers:{'Content-Type':'application/json','X-Admin-Secret':adminSecret},
+    body:JSON.stringify(body),
+  });
+  if(r.ok){
+    toggleForm('div-form');
+    loadGSEList('dividends','div-list',renderDivList);
+    ['div-company','div-ticker','div-amount','div-yield','div-exdate','div-paydate'].forEach(id=>document.getElementById(id).value='');
+  } else { errEl.textContent='Failed to save.'; errEl.classList.add('show'); }
+}
+
+async function saveIPO(){
+  const body={
+    company:       document.getElementById('ipo-company').value.trim(),
+    ticker:        document.getElementById('ipo-ticker').value.trim().toUpperCase(),
+    sector:        document.getElementById('ipo-sector').value.trim(),
+    status:        document.getElementById('ipo-status').value,
+    offer_price:   parseFloat(document.getElementById('ipo-price').value)||null,
+    shares_offered:document.getElementById('ipo-shares').value.trim(),
+    amount_raised: document.getElementById('ipo-raised').value.trim(),
+    open_date:     document.getElementById('ipo-open').value||null,
+    close_date:    document.getElementById('ipo-close').value||null,
+    listing_date:  document.getElementById('ipo-listing').value||null,
+    subscription:  document.getElementById('ipo-sub').value.trim(),
+    description:   document.getElementById('ipo-desc').value.trim(),
+  };
+  const errEl=document.getElementById('ipo-err');
+  errEl.classList.remove('show');
+  if(!body.company){ errEl.textContent='Company name is required.'; errEl.classList.add('show'); return; }
+  const r=await fetch('/api/admin-gse?table=ipos',{
+    method:'POST',headers:{'Content-Type':'application/json','X-Admin-Secret':adminSecret},
+    body:JSON.stringify(body),
+  });
+  if(r.ok){
+    toggleForm('ipo-form');
+    loadGSEList('ipos','ipo-list',renderIPOList);
+  } else { errEl.textContent='Failed to save.'; errEl.classList.add('show'); }
+}
+
+async function saveRights(){
+  const body={
+    company:        document.getElementById('ri-company').value.trim(),
+    ticker:         document.getElementById('ri-ticker').value.trim().toUpperCase(),
+    status:         document.getElementById('ri-status').value,
+    ratio:          document.getElementById('ri-ratio').value.trim(),
+    offer_price:    parseFloat(document.getElementById('ri-price').value)||null,
+    purpose:        document.getElementById('ri-purpose').value.trim(),
+    open_date:      document.getElementById('ri-open').value||null,
+    close_date:     document.getElementById('ri-close').value||null,
+    amount_targeted:document.getElementById('ri-amount').value.trim(),
+    result:         document.getElementById('ri-result').value.trim(),
+  };
+  const errEl=document.getElementById('ri-err');
+  errEl.classList.remove('show');
+  if(!body.company){ errEl.textContent='Company name is required.'; errEl.classList.add('show'); return; }
+  const r=await fetch('/api/admin-gse?table=rights',{
+    method:'POST',headers:{'Content-Type':'application/json','X-Admin-Secret':adminSecret},
+    body:JSON.stringify(body),
+  });
+  if(r.ok){
+    toggleForm('rights-form');
+    loadGSEList('rights','rights-list',renderRightsList);
+  } else { errEl.textContent='Failed to save.'; errEl.classList.add('show'); }
+}
+</script>
+</body>
+</html>
