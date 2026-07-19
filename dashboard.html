@@ -738,7 +738,7 @@ async function fetchNews(){
     const d = await r.json();
     // Filter to GSE-relevant articles only
     const items = (d.articles||[])
-      .filter(a => isGSERelated(a.title))
+      .filter(a => isGSERelated(a.title) && !a.title.startsWith('http') && a.title.length > 10)
       .slice(0,6);
     const el = document.getElementById('news-wrap');
     if(!items.length){

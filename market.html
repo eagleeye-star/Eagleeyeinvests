@@ -75,7 +75,7 @@
     <div>
       <div style="font-family:var(--font-display);font-size:26px;font-weight:600;">Market Centre</div>
       <div style="font-size:13px;color:var(--text-dim);margin-top:4px;">
-        <span class="live-dot"></span>All 38 GSE-listed stocks · Live via kwayisi GSE-API
+        <span class="live-dot"></span>All 38 GSE-listed stocks · Live prices
       </div>
     </div>
     <div style="display:flex;gap:10px;align-items:center;">
@@ -156,7 +156,7 @@
     </table>
     <div class="status-bar">
       <span id="market-status-bar">Loading market status…</span>
-      <span id="prices-note">Prices from kwayisi GSE-API</span>
+      <span id="prices-note">Live market data</span>
     </div>
   </div>
 </div>
@@ -181,10 +181,15 @@ function updateSnapshot(){
   const losers  = sorted.filter(s=>s.chg<0).reverse();
   const active  = [...gseStocks].sort((a,b)=>b.volume-a.volume)[0];
 
-  // GSE-CI
-  const gseci = calcGSECI();
-  document.getElementById('snap-gseci').textContent = gseci.toLocaleString();
-  document.getElementById('snap-gseci-sub').textContent = '▲ Live calculation';
+  // GSE-CI — load from Supabase (admin-managed, consistent with homepage)
+  fetch('/api/gse-data?table=settings').then(r=>r.json()).then(d=>{
+    const s={};
+    (d.data||[]).forEach(i=>{ s[i.key]=i.value; });
+    const el=document.getElementById('snap-gseci');
+    const sub=document.getElementById('snap-gseci-sub');
+    if(el && s.gseci) el.textContent=parseFloat(s.gseci).toLocaleString();
+    if(sub && s.gseci_change) sub.textContent=(s.gseci_change||'')+(s.gseci_updated?' · '+s.gseci_updated:'');
+  }).catch(()=>{});
 
   // Market cap
   document.getElementById('snap-mktcap').textContent = calcTotalMktCap();

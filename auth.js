@@ -80,7 +80,27 @@ const EE_AUTH = {
     }
   },
 
-  // Get a valid token — refreshes automatically if expired
+  // Start auto-refresh — checks every 10 minutes and refreshes if within 15 min of expiry
+  startAutoRefresh() {
+    // Clear any existing interval
+    if (window._eeRefreshInterval) clearInterval(window._eeRefreshInterval);
+    window._eeRefreshInterval = setInterval(async () => {
+      const exp = localStorage.getItem('ee_token_expires');
+      if (!exp) return;
+      const timeLeft = parseInt(exp) - Date.now();
+      // Refresh if less than 15 minutes remaining
+      if (timeLeft < 15 * 60 * 1000 && timeLeft > 0) {
+        await this.refreshToken();
+      }
+      // Token already expired — try refresh immediately
+      if (timeLeft <= 0) {
+        const ok = await this.refreshToken();
+        if (!ok) {
+          clearInterval(window._eeRefreshInterval);
+        }
+      }
+    }, 10 * 60 * 1000); // check every 10 minutes
+  },
   async getValidToken() {
     if (!this.getToken()) return null;
     if (this.isTokenExpired()) {
@@ -149,14 +169,18 @@ const EE_AUTH = {
           ${profile.plan==='premium'?'<span style="color:var(--gold-bright);">⭑ Premium</span>':''} ${profile.firstName||''}
         </span>
         <a href="dashboard.html" class="btn btn-ghost btn-sm">Dashboard</a>
+        <a href="profile.html" class="btn btn-ghost btn-sm">Profile</a>
         <button class="btn btn-ghost btn-sm" onclick="EE_AUTH.logout()">Log out</button>`;
     }
   },
 };
 
-// Auto-refresh token in background every 50 minutes
-setInterval(async () => {
-  if (EE_AUTH.isLoggedIn() && EE_AUTH.isTokenExpired()) {
-    await EE_AUTH.refreshToken();
+// Start smart auto-refresh when page loads
+if (EE_AUTH.isLoggedIn()) {
+  EE_AUTH.startAutoRefresh();
+  // Also refresh immediately if token is expired or close to expiry
+  const exp = localStorage.getItem('ee_token_expires');
+  if (exp && (parseInt(exp) - Date.now()) < 15 * 60 * 1000) {
+    EE_AUTH.refreshToken();
   }
-}, 50 * 60 * 1000);
+}

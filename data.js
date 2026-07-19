@@ -252,6 +252,7 @@ const NAV_ITEMS = [
   {href:'news.html',        label:'News'},
   {href:'alerts.html',      label:'Alerts'},
   {href:'pricing.html',     label:'Pricing'},
+  {href:'profile.html',     label:'My Profile'},
 ];
 
 function buildHeader(activePage){

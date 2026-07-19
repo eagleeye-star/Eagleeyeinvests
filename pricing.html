@@ -154,7 +154,7 @@ function setBilling(plan){
 
 async function initiatePayment(){
   const token = localStorage.getItem('ee_access_token');
-  if(!token){ window.location.href='login.html?next=pricing.html'; return; }
+  if(!token){ window.location.href='login.html'; return; }
   const btn = document.getElementById('upgrade-btn');
   const errEl = document.getElementById('pay-error');
   errEl.classList.remove('show');
