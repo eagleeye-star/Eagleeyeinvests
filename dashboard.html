@@ -44,6 +44,8 @@
 .icon-btn{background:none;border:1px solid var(--border);border-radius:5px;color:var(--text-faint);cursor:pointer;padding:3px 7px;font-size:11px;font-family:var(--font-body);}
 .icon-btn:hover{border-color:var(--text-dim);color:var(--text);}
 .icon-btn.del:hover{border-color:var(--red);color:var(--red);}
+.sell-btn{font-size:11px;padding:3px 7px;background:var(--red-fill);color:var(--red);border:1px solid rgba(217,89,76,0.25);border-radius:5px;cursor:pointer;font-family:var(--font-mono);font-weight:600;transition:all .15s;}
+.sell-btn:hover{background:var(--red);color:#fff;border-color:var(--red);}
 .empty-state{text-align:center;padding:48px 20px;color:var(--text-dim);}
 .empty-icon{font-size:28px;margin-bottom:12px;opacity:0.4;}
 .loading-state{text-align:center;padding:40px;color:var(--text-faint);font-size:13px;}
@@ -193,6 +195,45 @@
   </div>
 </div>
 
+<!-- SELL MODAL -->
+<div class="modal-bg" id="sellModal">
+  <div class="modal-box" style="max-width:400px;">
+    <div class="modal-title">Sell shares</div>
+    <div class="modal-sub" id="sell-sub">Record a partial or full sale of your holding.</div>
+    <div class="modal-field">
+      <label>Shares to sell <span id="sell-max" style="color:var(--text-faint);font-weight:400;"></span></label>
+      <input type="number" id="sell-shares" placeholder="e.g. 500" min="1" step="1" oninput="updateSellPreview()">
+    </div>
+    <div class="modal-field">
+      <label>Sell price (GH₵ per share)</label>
+      <input type="number" id="sell-price" placeholder="e.g. 7.50" min="0.01" step="0.01" oninput="updateSellPreview()">
+    </div>
+    <div id="sell-preview" style="display:none;background:var(--panel-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;margin-top:8px;font-size:12.5px;">
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+        <span style="color:var(--text-dim);">Sale proceeds</span>
+        <span id="sell-proceeds" style="font-family:var(--font-mono);font-weight:600;"></span>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+        <span style="color:var(--text-dim);">Cost basis</span>
+        <span id="sell-cost" style="font-family:var(--font-mono);"></span>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding-top:6px;border-top:1px solid var(--border-soft);">
+        <span style="color:var(--text-dim);">Realised P&L</span>
+        <span id="sell-pnl" style="font-family:var(--font-mono);font-weight:700;"></span>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-top:6px;">
+        <span style="color:var(--text-dim);">Remaining shares</span>
+        <span id="sell-remaining" style="font-family:var(--font-mono);color:var(--gold-bright);"></span>
+      </div>
+    </div>
+    <div class="err-msg" id="sell-err"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="document.getElementById('sellModal').classList.remove('open')">Cancel</button>
+      <button class="btn btn-gold" onclick="confirmSell()">Confirm sale</button>
+    </div>
+  </div>
+</div>
+
 <!-- EDIT MODAL -->
 <div class="modal-bg" id="editModal">
   <div class="modal-box" style="max-width:360px;">
@@ -229,7 +270,10 @@
   <div class="db-header">
     <div style="display:flex;align-items:center;gap:14px;">
       <a href="index.html" class="btn btn-ghost btn-sm">← Home</a>
-      <div class="db-title">My Portfolio</div>
+      <div>
+        <div class="db-title">My Portfolio</div>
+        <div id="dash-welcome" style="font-size:12px;color:var(--text-dim);margin-top:2px;"></div>
+      </div>
     </div>
     <div style="display:flex;gap:8px;align-items:center;">
       <span id="last-sync" style="font-size:11.5px;color:var(--text-faint);font-family:var(--font-mono);"></span>
@@ -589,6 +633,7 @@ function renderHoldings(){
       </td>
       <td>
         <div class="row-actions">
+          <button class="icon-btn sell-btn" onclick="openSell('${h.id}','${h.ticker}',${h.shares},${h.avg})" title="Sell shares">↓ Sell</button>
           <button class="icon-btn" onclick="openEdit('${h.id}','${h.ticker}',${h.shares},${h.avg})">✏</button>
           <button class="icon-btn del" onclick="openDelete('${h.id}','${h.ticker}')">✕</button>
         </div>
@@ -795,6 +840,111 @@ function renderMarketStatus(){
 const tickerSel = document.getElementById('m-ticker');
 tickerSel.innerHTML = '<option value="">Select a stock…</option>';
 gseStocks.forEach(s=>{ tickerSel.innerHTML+=`<option value="${s.ticker}" data-name="${s.name}" data-sector="${s.sector}">${s.ticker} — ${s.name}</option>`; });
+
+// ===== SELL HOLDING =====
+let sellState = { id:null, ticker:null, shares:0, avg:0 };
+
+function openSell(id, ticker, shares, avg){
+  sellState = { id, ticker, shares, avg };
+  document.getElementById('sell-sub').textContent = `Selling ${ticker} — you currently hold ${fmt(shares,0)} shares at avg GH₵${fmt(avg,2)}.`;
+  document.getElementById('sell-max').textContent = `(max ${fmt(shares,0)})`;
+  document.getElementById('sell-shares').value = '';
+  document.getElementById('sell-price').value = '';
+  document.getElementById('sell-preview').style.display = 'none';
+  document.getElementById('sell-err').classList.remove('show');
+  document.getElementById('sellModal').classList.add('open');
+}
+document.getElementById('sellModal').addEventListener('click',e=>{ if(e.target===e.currentTarget) e.currentTarget.classList.remove('open'); });
+
+function updateSellPreview(){
+  const sharesToSell = parseFloat(document.getElementById('sell-shares').value)||0;
+  const sellPrice    = parseFloat(document.getElementById('sell-price').value)||0;
+  const preview      = document.getElementById('sell-preview');
+
+  if(sharesToSell <= 0 || sellPrice <= 0){ preview.style.display='none'; return; }
+
+  const proceeds  = sharesToSell * sellPrice;
+  const costBasis = sharesToSell * sellState.avg;
+  const pnl       = proceeds - costBasis;
+  const remaining = sellState.shares - sharesToSell;
+  const pnlUp     = pnl >= 0;
+
+  document.getElementById('sell-proceeds').textContent  = 'GH₵'+fmt(proceeds,2);
+  document.getElementById('sell-cost').textContent      = 'GH₵'+fmt(costBasis,2);
+  document.getElementById('sell-pnl').textContent       = (pnlUp?'+':'')+'GH₵'+fmt(pnl,2)+' ('+(pnlUp?'+':'')+fmt((pnl/costBasis)*100,1)+'%)';
+  document.getElementById('sell-pnl').style.color       = pnlUp ? 'var(--green-bright)' : 'var(--red)';
+  document.getElementById('sell-remaining').textContent = fmt(Math.max(0,remaining),0)+' shares';
+  preview.style.display = 'block';
+}
+
+async function confirmSell(){
+  const sharesToSell = parseFloat(document.getElementById('sell-shares').value)||0;
+  const sellPrice    = parseFloat(document.getElementById('sell-price').value)||0;
+  const errEl        = document.getElementById('sell-err');
+  errEl.classList.remove('show');
+
+  if(sharesToSell <= 0){ errEl.textContent='Enter number of shares to sell.'; errEl.classList.add('show'); return; }
+  if(sellPrice <= 0){ errEl.textContent='Enter the sell price per share.'; errEl.classList.add('show'); return; }
+  if(sharesToSell > sellState.shares){ errEl.textContent=`You only hold ${fmt(sellState.shares,0)} shares.`; errEl.classList.add('show'); return; }
+
+  const remaining = sellState.shares - sharesToSell;
+  const token = localStorage.getItem('ee_access_token');
+
+  try{
+    if(remaining <= 0){
+      // Full sale — delete the holding
+      await fetch('/api/holdings', {
+        method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+        body:JSON.stringify({ action:'delete-holding', holdingId: sellState.id })
+      });
+    } else {
+      // Partial sale — update shares (keep same avg cost)
+      await fetch('/api/holdings', {
+        method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+        body:JSON.stringify({ action:'update-holding', holdingId: sellState.id, shares: remaining, avgCost: sellState.avg })
+      });
+    }
+    document.getElementById('sellModal').classList.remove('open');
+    await loadHoldings();
+    renderHoldings();
+  }catch(err){
+    errEl.textContent = 'Failed to record sale. Please try again.';
+    errEl.classList.add('show');
+  }
+}
+
+// ===== ALERTS BADGE =====
+function checkAlertsBadge(){
+  const alerts = JSON.parse(localStorage.getItem('ee_alerts')||'[]');
+  const triggered = alerts.filter(a => a.is_active && a.triggered);
+  const navAlerts = document.querySelector('a[href="alerts.html"]');
+  if(navAlerts && triggered.length > 0){
+    navAlerts.style.position = 'relative';
+    if(!navAlerts.querySelector('.alert-badge')){
+      const badge = document.createElement('span');
+      badge.className = 'alert-badge';
+      badge.textContent = triggered.length;
+      badge.style.cssText = 'position:absolute;top:-4px;right:-8px;background:var(--red);color:#fff;font-size:9px;font-weight:700;padding:1px 4px;border-radius:8px;font-family:var(--font-mono);min-width:14px;text-align:center;';
+      navAlerts.appendChild(badge);
+    }
+  }
+}
+
+// ===== WELCOME MESSAGE =====
+function renderWelcome(){
+  const profile = JSON.parse(localStorage.getItem('ee_profile')||'null');
+  if(!profile) return;
+  const firstName = profile.firstName || '';
+  if(!firstName) return;
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  const welcomeEl = document.getElementById('dash-welcome');
+  if(welcomeEl) welcomeEl.textContent = `${greeting}, ${firstName} 👋`;
+}
+renderWelcome();
+setTimeout(checkAlertsBadge, 2000);
 
 function openModal(){
   // Free plan limit: max 10 holdings
@@ -1018,7 +1168,7 @@ function printHoldings(){
   <table><thead><tr><th>Stock</th><th>Shares</th><th>Avg Cost</th><th>Price</th><th>Value</th><th>P&L %</th><th>P&L GH₵</th></tr></thead>
   <tbody>${rows.map(h=>`<tr><td><strong>${h.ticker}</strong><br><small>${h.name}</small></td><td>${fmt(h.shares,0)}</td><td>${fmt(h.avg,2)}</td><td>${fmt(h.price,2)}</td><td>${fmt(h.value,0)}</td><td class="${h.pnl>=0?'up':'dn'}">${h.pnl>=0?'+':''}${fmt(h.pnl,1)}%</td><td class="${h.pnl>=0?'up':'dn'}">${h.pnlAbs>=0?'+':''}GH₵${fmt(h.pnlAbs,0)}</td></tr>`).join('')}</tbody>
   <tfoot><tr><td colspan="4">TOTAL (${rows.length} holdings)</td><td>GH₵${fmt(totVal,0)}</td><td class="${totPnl>=0?'up':'dn'}">${totPnlPct>=0?'+':''}${fmt(totPnlPct,1)}%</td><td class="${totPnl>=0?'up':'dn'}">${totPnl>=0?'+':''}GH₵${fmt(totPnl,0)}</td></tr></tfoot></table>
-  <div class="footer"><span>eagleeyeinvests.com</span><span>Prices: kwayisi GSE-API · Not investment advice</span></div>
+  <div class="footer"><span>eagleeyeinvests.com</span><span>Not investment advice</span></div>
   <scr`+'ipt>window.onload=function(){window.print();}<'+`/scr`+'ipt></body></html>');
   win.document.close();
 }
