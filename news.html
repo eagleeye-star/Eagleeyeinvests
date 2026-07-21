@@ -171,13 +171,14 @@ function renderNews(){
   grid.innerHTML=filtered.map((a,i)=>{
     // Clean title — skip articles where title looks like a URL
     const title = a.title || '';
+    const desc  = (a.description||'').replace(/<[^>]+>/g,'').replace(/&[a-z]+;/gi,'').trim();
     if(title.startsWith('http') || title.length < 10) return '';
     if(i===0) return `
       <a class="news-card featured" href="${a.link||'#'}" target="_blank" rel="noopener">
         <div class="fc-text">
           <span class="news-cat">${a.category||'News'}</span>
           <h3>${title}</h3>
-          <p>${a.description||''}</p>
+          <p>${desc}</p>
           <div class="news-meta">
             <span>${a.date}</span>
           </div>
@@ -188,7 +189,7 @@ function renderNews(){
       <a class="news-card" href="${a.link||'#'}" target="_blank" rel="noopener">
         <span class="news-cat">${a.category||'News'}</span>
         <h3>${title}</h3>
-        <p>${a.description||''}</p>
+        <p>${desc}</p>
         <div class="news-meta">
           <span>${a.date}</span>
         </div>
