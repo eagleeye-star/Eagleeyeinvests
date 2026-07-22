@@ -16,21 +16,19 @@
     { "source": "/api/save-snapshot",    "destination": "/api/portfolio.js" },
     { "source": "/api/get-history",      "destination": "/api/portfolio.js" },
     { "source": "/api/update-goal",      "destination": "/api/portfolio.js" },
+    { "source": "/api/exchange-rate",    "destination": "/api/portfolio.js" },
     { "source": "/api/alerts",           "destination": "/api/alerts.js" },
     { "source": "/api/news",             "destination": "/api/news.js" },
-    { "source": "/api/feedback",         "destination": "/api/feedback.js" },
+    { "source": "/api/feedback",         "destination": "/api/admin.js" },
     { "source": "/api/admin-users",      "destination": "/api/admin.js" },
     { "source": "/api/admin-feedback",   "destination": "/api/admin.js" },
     { "source": "/api/admin-stats",      "destination": "/api/admin.js" },
+    { "source": "/api/admin-gse",        "destination": "/api/admin.js" },
+    { "source": "/api/gse-data",         "destination": "/api/admin.js" },
     { "source": "/api/paystack-init",    "destination": "/api/payments.js" },
     { "source": "/api/paystack-webhook", "destination": "/api/payments.js" },
     { "source": "/api/paystack-verify",  "destination": "/api/payments.js" },
-    { "source": "/api/push-subscribe",   "destination": "/api/push.js" },
-    { "source": "/api/push-send",        "destination": "/api/push.js" },
-    { "source": "/api/admin-gse",        "destination": "/api/admin.js" },
-    { "source": "/api/gse-data",          "destination": "/api/gse-data.js" },
-    { "source": "/api/admin-notify",      "destination": "/api/admin-notify.js" },
-    { "source": "/api/exchange-rate",    "destination": "/api/exchange-rate.js" }
+    { "source": "/api/admin-notify",     "destination": "/api/admin-notify.js" }
   ],
   "headers": [
     {
