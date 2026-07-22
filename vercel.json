@@ -29,6 +29,7 @@
     { "source": "/api/push-send",        "destination": "/api/push.js" },
     { "source": "/api/admin-gse",        "destination": "/api/admin.js" },
     { "source": "/api/gse-data",          "destination": "/api/gse-data.js" },
+    { "source": "/api/admin-notify",      "destination": "/api/admin-notify.js" },
     { "source": "/api/exchange-rate",    "destination": "/api/exchange-rate.js" }
   ],
   "headers": [

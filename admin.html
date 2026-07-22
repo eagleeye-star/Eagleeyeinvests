@@ -276,28 +276,61 @@
 
     <!-- NOTIFICATIONS TAB -->
     <div id="tab-notifications" style="display:none;">
-      <div class="panel">
-        <div class="panel-head"><div class="panel-title">Send push notification</div></div>
-        <div class="notify-form">
-          <label>Send to</label>
-          <select id="n-target">
-            <option value="all">All users</option>
-            <option value="premium">Premium users only</option>
-            <option value="user">Specific user (enter ID below)</option>
-          </select>
-          <label>User ID (if specific)</label>
-          <input type="text" id="n-userid" placeholder="User UUID from users table">
-          <label>Title</label>
-          <input type="text" id="n-title" placeholder="e.g. Market is now open">
-          <label>Message</label>
-          <textarea id="n-body" placeholder="e.g. GSE trading session has begun. Check your alerts."></textarea>
-          <label>Link URL (optional)</label>
-          <input type="text" id="n-url" placeholder="https://project-95ar2.vercel.app/dashboard.html">
+
+      <!-- Compose new notification -->
+      <div class="panel" style="margin-bottom:18px;">
+        <div class="panel-head"><div class="panel-title">📢 Send in-app notification</div></div>
+        <div style="padding:18px;">
+          <div style="font-size:12.5px;color:var(--text-dim);margin-bottom:16px;line-height:1.6;">
+            Notifications appear on the dashboard for all users when they log in — no subscription required.
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+            <div>
+              <label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:0.04em;">Send to</label>
+              <select id="n-target" class="search-bar" style="width:100%;">
+                <option value="all">All users</option>
+                <option value="premium">Premium users only</option>
+                <option value="free">Free users only</option>
+              </select>
+            </div>
+            <div>
+              <label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:0.04em;">Type</label>
+              <select id="n-type" class="search-bar" style="width:100%;">
+                <option value="info">ℹ Info</option>
+                <option value="success">✓ Good news</option>
+                <option value="warning">⚠ Warning</option>
+                <option value="dividend">💰 Dividend</option>
+                <option value="market">📈 Market update</option>
+              </select>
+            </div>
+          </div>
+          <div style="margin-bottom:12px;">
+            <label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:0.04em;">Title</label>
+            <input type="text" id="n-title" placeholder="e.g. GCB Bank declares dividend" class="search-bar" style="width:100%;">
+          </div>
+          <div style="margin-bottom:12px;">
+            <label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:0.04em;">Message</label>
+            <textarea id="n-body" placeholder="e.g. GCB Bank has declared a dividend of GH₵2.80 per share. Ex-date: 22 April 2026." style="width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;background:var(--panel-2);color:var(--text);height:80px;resize:none;font-family:var(--font-body);box-sizing:border-box;"></textarea>
+          </div>
+          <div style="margin-bottom:16px;">
+            <label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:0.04em;">Link (optional)</label>
+            <input type="text" id="n-url" placeholder="e.g. gse-events.html" class="search-bar" style="width:100%;">
+          </div>
           <div class="alert-box alert-error" id="n-error"></div>
           <div class="alert-box alert-success" id="n-success"></div>
-          <button class="btn btn-gold" onclick="sendNotification()">Send notification</button>
+          <button class="btn btn-gold" onclick="sendInAppNotification()">Send to users</button>
         </div>
-        <div style="font-size:12px;color:var(--text-faint);padding:8px 0;">Note: Push notifications only reach users who have enabled them on a compatible browser (Chrome, Edge, Android). Not supported on iOS Safari.</div>
+      </div>
+
+      <!-- Sent notifications history -->
+      <div class="panel">
+        <div class="panel-head">
+          <div class="panel-title">Sent notifications</div>
+          <button class="btn btn-ghost btn-sm" onclick="loadNotifHistory()">↻ Refresh</button>
+        </div>
+        <div id="notif-history" style="padding:14px 18px;">
+          <div style="font-size:13px;color:var(--text-faint);">Loading…</div>
+        </div>
       </div>
     </div>
 
@@ -487,26 +520,82 @@ function filterFeedback(){
 }
 
 // ===== NOTIFICATIONS =====
-async function sendNotification(){
-  const target=document.getElementById('n-target').value;
-  const userId=document.getElementById('n-userid').value.trim();
-  const title=document.getElementById('n-title').value.trim();
-  const body=document.getElementById('n-body').value.trim();
-  const url=document.getElementById('n-url').value.trim();
-  const errEl=document.getElementById('n-error'),sucEl=document.getElementById('n-success');
-  errEl.classList.remove('show');sucEl.classList.remove('show');
-  if(!title||!body){errEl.textContent='Title and message are required.';errEl.classList.add('show');return;}
-  if(target==='user'&&!userId){errEl.textContent='Enter a user ID for specific user notification.';errEl.classList.add('show');return;}
+// ===== IN-APP NOTIFICATIONS =====
+async function sendInAppNotification(){
+  const title  = document.getElementById('n-title').value.trim();
+  const body   = document.getElementById('n-body').value.trim();
+  const target = document.getElementById('n-target').value;
+  const type   = document.getElementById('n-type').value;
+  const url    = document.getElementById('n-url').value.trim();
+  const errEl  = document.getElementById('n-error');
+  const sucEl  = document.getElementById('n-success');
+  errEl.classList.remove('show'); sucEl.classList.remove('show');
+
+  if(!title){ errEl.textContent='Title is required.'; errEl.classList.add('show'); return; }
+  if(!body){  errEl.textContent='Message is required.'; errEl.classList.add('show'); return; }
+
+  const btn = document.querySelector('[onclick="sendInAppNotification()"]');
+  btn.disabled=true; btn.textContent='Sending…';
+
   try{
-    const res=await fetch('/api/push-send',{
+    const res = await fetch('/api/admin-notify', {
       method:'POST',
       headers:{'Content-Type':'application/json','X-Admin-Secret':adminSecret},
-      body:JSON.stringify({user_id:target==='user'?userId:null,type:'admin',title,body,url:url||window.location.origin+'/dashboard.html'})
+      body: JSON.stringify({ title, body, type, url:url||null, target }),
     });
-    const d=await res.json();
-    if(!res.ok){errEl.textContent=d.error||'Could not send.';errEl.classList.add('show');}
-    else{sucEl.textContent=`Sent to ${d.sent||0} subscribers.`;sucEl.classList.add('show');}
-  }catch{errEl.textContent='Network error.';errEl.classList.add('show');}
+    const data = await res.json();
+    if(res.ok){
+      sucEl.textContent=`✓ Notification sent to ${data.count||0} users.`;
+      sucEl.classList.add('show');
+      document.getElementById('n-title').value='';
+      document.getElementById('n-body').value='';
+      document.getElementById('n-url').value='';
+      setTimeout(()=>loadNotifHistory(), 800);
+    } else {
+      errEl.textContent = data.error||'Failed to send.';
+      errEl.classList.add('show');
+    }
+  }catch(e){
+    errEl.textContent='Network error: '+e.message;
+    errEl.classList.add('show');
+  }
+  btn.disabled=false; btn.textContent='Send to users';
+}
+
+async function loadNotifHistory(){
+  const el = document.getElementById('notif-history');
+  if(!el) return;
+  try{
+    const res = await fetch('/api/admin-notify?action=history',{
+      headers:{'X-Admin-Secret':adminSecret}
+    });
+    const data = await res.json();
+    const items = data.notifications||[];
+    if(!items.length){
+      el.innerHTML='<div style="font-size:13px;color:var(--text-faint);">No notifications sent yet.</div>';
+      return;
+    }
+    el.innerHTML=items.map(n=>`
+      <div style="padding:12px 0;border-bottom:1px solid var(--border-soft);display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">
+        <div>
+          <div style="font-size:13px;font-weight:600;">${n.title}</div>
+          <div style="font-size:12px;color:var(--text-dim);margin-top:3px;">${n.body}</div>
+          <div style="font-size:11px;color:var(--text-faint);margin-top:4px;font-family:var(--font-mono);">
+            ${n.type||'info'} · ${n.target||'all'} · ${new Date(n.created_at).toLocaleDateString('en-GH',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}
+          </div>
+        </div>
+        <button onclick="deleteNotif('${n.id}')" class="icon-btn del">✕</button>
+      </div>`).join('');
+  }catch(e){
+    el.innerHTML='<div style="font-size:13px;color:var(--red);">Failed to load.</div>';
+  }
+}
+
+async function deleteNotif(id){
+  await fetch(`/api/admin-notify?id=${id}`,{
+    method:'DELETE',headers:{'X-Admin-Secret':adminSecret}
+  });
+  loadNotifHistory();
 }
 
 // ===== TABS =====
@@ -519,6 +608,7 @@ function showTab(name,btn){
   if(btn) btn.classList.add('active');
   if(name==='feedback'&&!allFeedback.length) loadFeedback();
   if(name==='gse') loadGSEAdmin();
+  if(name==='notifications') loadNotifHistory();
 }
 
 // ===== GSE DATA MANAGEMENT =====

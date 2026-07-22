@@ -195,7 +195,16 @@
   </div>
 </div>
 
-<!-- SELL MODAL -->
+<!-- NOTIFICATION PANEL -->
+<div id="notif-panel" style="display:none;position:fixed;top:60px;right:20px;width:340px;max-height:480px;background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);box-shadow:0 8px 32px rgba(0,0,0,0.3);z-index:1000;overflow:hidden;">
+  <div style="padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+    <div style="font-size:14px;font-weight:600;">Notifications</div>
+    <button onclick="markAllRead()" style="font-size:11px;color:var(--gold-bright);background:none;border:none;cursor:pointer;">Mark all read</button>
+  </div>
+  <div id="notif-list" style="overflow-y:auto;max-height:400px;padding:8px 0;">
+    <div style="padding:20px;text-align:center;color:var(--text-faint);font-size:13px;">No notifications</div>
+  </div>
+</div>
 <div class="modal-bg" id="sellModal">
   <div class="modal-box" style="max-width:400px;">
     <div class="modal-title">Sell shares</div>
@@ -277,6 +286,10 @@
     </div>
     <div style="display:flex;gap:8px;align-items:center;">
       <span id="last-sync" style="font-size:11.5px;color:var(--text-faint);font-family:var(--font-mono);"></span>
+      <div style="position:relative;display:inline-block;">
+        <button class="btn btn-ghost btn-sm" onclick="toggleNotifPanel()" id="notif-bell" title="Notifications">🔔</button>
+        <span id="notif-count" style="display:none;position:absolute;top:-4px;right:-6px;background:var(--red);color:#fff;font-size:9px;font-weight:700;padding:1px 4px;border-radius:8px;font-family:var(--font-mono);min-width:14px;text-align:center;pointer-events:none;"></span>
+      </div>
       <button class="btn btn-ghost btn-sm" onclick="printHoldings()">🖨 Print</button>
       <button class="btn btn-gold btn-sm" onclick="openModal()">+ Add holding</button>
     </div>
@@ -841,7 +854,146 @@ const tickerSel = document.getElementById('m-ticker');
 tickerSel.innerHTML = '<option value="">Select a stock…</option>';
 gseStocks.forEach(s=>{ tickerSel.innerHTML+=`<option value="${s.ticker}" data-name="${s.name}" data-sector="${s.sector}">${s.ticker} — ${s.name}</option>`; });
 
-// ===== SELL HOLDING =====
+// ===== IN-APP NOTIFICATIONS =====
+const SB_NOTIF_URL  = 'https://jyhamtniuhlsbwcdfspa.supabase.co';
+const SB_NOTIF_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp5aGFtdG5pdWhsc2J3Y2Rmc3BhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxNjE1MTgsImV4cCI6MjA5NzczNzUxOH0.1nT-wpRjjAIpgUk_BDTlu3z4Cvuz_G0nKX9l65cwpF0';
+
+let userNotifs = [];
+
+async function loadNotifications(){
+  const token = localStorage.getItem('ee_access_token');
+  const user  = JSON.parse(localStorage.getItem('ee_user')||'null');
+  if(!token || !user) return;
+
+  try{
+    const res = await fetch(`${SB_NOTIF_URL}/rest/v1/user_notifications?user_id=eq.${user.id}&order=created_at.desc&limit=20`,{
+      headers:{ 'apikey': SB_NOTIF_ANON, 'Authorization': `Bearer ${token}` }
+    });
+    userNotifs = res.ok ? await res.json() : [];
+
+    const unread = userNotifs.filter(n=>!n.is_read).length;
+    const countEl = document.getElementById('notif-count');
+    if(countEl){
+      if(unread > 0){
+        countEl.textContent = unread > 9 ? '9+' : unread;
+        countEl.style.display = 'block';
+      } else {
+        countEl.style.display = 'none';
+      }
+    }
+
+    renderNotifList();
+
+    // Show banner for latest unread
+    const latest = userNotifs.find(n=>!n.is_read);
+    if(latest) showNotifBanner(latest);
+
+  }catch(e){ console.warn('Notifications error:', e.message); }
+}
+
+function renderNotifList(){
+  const el = document.getElementById('notif-list');
+  if(!el) return;
+  if(!userNotifs.length){
+    el.innerHTML='<div style="padding:20px;text-align:center;color:var(--text-faint);font-size:13px;">No notifications</div>';
+    return;
+  }
+
+  const typeColors = { info:'var(--blue)', success:'var(--green-bright)', warning:'var(--amber,#E8A020)', dividend:'var(--gold-bright)', market:'var(--green-bright)' };
+  const typeIcons  = { info:'ℹ', success:'✓', warning:'⚠', dividend:'💰', market:'📈' };
+
+  el.innerHTML = userNotifs.map(n=>`
+    <div onclick="clickNotif('${n.id}','${n.url||''}')" style="padding:12px 16px;cursor:pointer;border-bottom:1px solid var(--border-soft);background:${n.is_read?'none':'rgba(212,165,55,0.04)'};transition:background .15s;" onmouseover="this.style.background='var(--panel-2)'" onmouseout="this.style.background='${n.is_read?'none':'rgba(212,165,55,0.04)'}'">
+      <div style="display:flex;align-items:flex-start;gap:10px;">
+        <span style="font-size:16px;margin-top:1px;">${typeIcons[n.type]||'ℹ'}</span>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:13px;font-weight:${n.is_read?'400':'600'};margin-bottom:3px;">${n.title}</div>
+          <div style="font-size:12px;color:var(--text-dim);line-height:1.5;">${n.body}</div>
+          <div style="font-size:10.5px;color:var(--text-faint);margin-top:5px;font-family:var(--font-mono);">${new Date(n.created_at).toLocaleDateString('en-GH',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</div>
+        </div>
+        ${n.is_read?'':'<span style="width:7px;height:7px;border-radius:50%;background:var(--gold-bright);margin-top:5px;flex-shrink:0;"></span>'}
+      </div>
+    </div>`).join('');
+}
+
+async function clickNotif(id, url){
+  // Mark as read
+  const token = localStorage.getItem('ee_access_token');
+  await fetch(`${SB_NOTIF_URL}/rest/v1/user_notifications?id=eq.${id}`,{
+    method:'PATCH',
+    headers:{ 'apikey':SB_NOTIF_ANON, 'Authorization':`Bearer ${token}`, 'Content-Type':'application/json' },
+    body: JSON.stringify({ is_read: true })
+  }).catch(()=>{});
+
+  // Update local state
+  const n = userNotifs.find(n=>n.id===id);
+  if(n) n.is_read = true;
+
+  // Update badge
+  const unread = userNotifs.filter(n=>!n.is_read).length;
+  const countEl = document.getElementById('notif-count');
+  if(countEl) countEl.style.display = unread > 0 ? 'block' : 'none';
+  if(countEl && unread > 0) countEl.textContent = unread > 9 ? '9+' : unread;
+
+  renderNotifList();
+
+  // Navigate if URL provided
+  if(url && url !== 'null') window.location.href = url;
+}
+
+async function markAllRead(){
+  const token = localStorage.getItem('ee_access_token');
+  const user  = JSON.parse(localStorage.getItem('ee_user')||'null');
+  if(!token || !user) return;
+  await fetch(`${SB_NOTIF_URL}/rest/v1/user_notifications?user_id=eq.${user.id}&is_read=eq.false`,{
+    method:'PATCH',
+    headers:{ 'apikey':SB_NOTIF_ANON, 'Authorization':`Bearer ${token}`, 'Content-Type':'application/json' },
+    body: JSON.stringify({ is_read: true })
+  }).catch(()=>{});
+  userNotifs.forEach(n=>n.is_read=true);
+  document.getElementById('notif-count').style.display='none';
+  renderNotifList();
+}
+
+function toggleNotifPanel(){
+  const panel = document.getElementById('notif-panel');
+  panel.style.display = panel.style.display==='none' ? 'block' : 'none';
+}
+
+function showNotifBanner(n){
+  const existing = document.getElementById('notif-banner');
+  if(existing) existing.remove();
+
+  const typeColors = { info:'var(--blue)', success:'var(--green-bright)', warning:'#E8A020', dividend:'var(--gold-bright)', market:'var(--green-bright)' };
+  const color = typeColors[n.type] || 'var(--gold-bright)';
+
+  const banner = document.createElement('div');
+  banner.id = 'notif-banner';
+  banner.style.cssText = `position:fixed;bottom:24px;right:24px;background:var(--panel);border:1px solid var(--border);border-left:3px solid ${color};border-radius:var(--radius);padding:14px 16px;max-width:320px;box-shadow:0 8px 24px rgba(0,0,0,0.3);z-index:2000;cursor:pointer;animation:slideIn .3s ease;`;
+  banner.innerHTML = `
+    <div style="display:flex;align-items:flex-start;gap:10px;">
+      <div style="flex:1;">
+        <div style="font-size:13px;font-weight:600;margin-bottom:4px;">${n.title}</div>
+        <div style="font-size:12px;color:var(--text-dim);line-height:1.5;">${n.body}</div>
+      </div>
+      <button onclick="document.getElementById('notif-banner').remove()" style="background:none;border:none;color:var(--text-faint);cursor:pointer;font-size:14px;padding:0;margin-top:-2px;">✕</button>
+    </div>`;
+  banner.addEventListener('click', (e)=>{ if(e.target.tagName!=='BUTTON') clickNotif(n.id, n.url); document.getElementById('notif-banner')?.remove(); });
+  document.body.appendChild(banner);
+  setTimeout(()=>{ banner.style.opacity='0'; banner.style.transition='opacity .5s'; setTimeout(()=>banner.remove(),500); }, 6000);
+}
+
+// Close panel when clicking outside
+document.addEventListener('click', e=>{
+  const panel = document.getElementById('notif-panel');
+  const bell  = document.getElementById('notif-bell');
+  if(panel && !panel.contains(e.target) && e.target!==bell && !bell?.contains(e.target)){
+    panel.style.display='none';
+  }
+});
+
+// Load notifications on page load
+loadNotifications();
 let sellState = { id:null, ticker:null, shares:0, avg:0 };
 
 function openSell(id, ticker, shares, avg){
