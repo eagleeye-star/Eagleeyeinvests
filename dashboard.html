@@ -395,6 +395,27 @@
         </div>
       </div>
 
+      <!-- Holdings pie chart -->
+      <div class="section" id="holdings-pie-section" style="display:none;">
+        <div class="section-head">
+          <div class="section-title">Portfolio breakdown</div>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-ghost btn-sm active" id="pie-by-value" onclick="switchPie('value',this)">By value</button>
+            <button class="btn btn-ghost btn-sm" id="pie-by-shares" onclick="switchPie('shares',this)">By shares</button>
+          </div>
+        </div>
+        <div style="padding:18px;display:flex;align-items:center;gap:24px;flex-wrap:wrap;">
+          <div style="position:relative;width:200px;height:200px;flex-shrink:0;">
+            <canvas id="holdingsPieChart"></canvas>
+            <div id="pie-center" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none;">
+              <div style="font-size:11px;color:var(--text-faint);">Total</div>
+              <div id="pie-total" style="font-size:15px;font-weight:700;font-family:var(--font-display);"></div>
+            </div>
+          </div>
+          <div id="pie-legend" style="flex:1;min-width:180px;display:flex;flex-direction:column;gap:6px;"></div>
+        </div>
+      </div>
+
       <!-- Market movers -->
       <div class="section">
         <div class="section-head"><div class="section-title">Market movers</div></div>
@@ -602,6 +623,7 @@ function renderHoldings(){
   }
   renderGoal(totVal);
   renderSectors(rows, totVal);
+  renderHoldingsPie(rows);
   renderDividends(rows);
 
   if(rows.length===0){
@@ -854,7 +876,86 @@ const tickerSel = document.getElementById('m-ticker');
 tickerSel.innerHTML = '<option value="">Select a stock…</option>';
 gseStocks.forEach(s=>{ tickerSel.innerHTML+=`<option value="${s.ticker}" data-name="${s.name}" data-sector="${s.sector}">${s.ticker} — ${s.name}</option>`; });
 
-// ===== IN-APP NOTIFICATIONS =====
+// ===== HOLDINGS PIE CHART =====
+let pieInst = null;
+let pieMode = 'value'; // 'value' or 'shares'
+const PIE_COLORS = [
+  '#E8C158','#4CAF8A','#4C8FD1','#D9594C','#9B7FD4',
+  '#E8A020','#2DC98D','#F06292','#26C6DA','#8BC34A',
+  '#FF8A65','#7986CB','#A1887F','#78909C','#66BB6A',
+];
+
+function renderHoldingsPie(rows){
+  const section = document.getElementById('holdings-pie-section');
+  if(!rows || rows.length < 2){ if(section) section.style.display='none'; return; }
+  if(section) section.style.display='block';
+
+  const totVal = rows.reduce((s,r)=>s+(r.value||0),0);
+  document.getElementById('pie-total').textContent = 'GH₵'+fmt(totVal,0);
+
+  drawPie(rows, pieMode);
+}
+
+function drawPie(rows, mode){
+  const canvas = document.getElementById('holdingsPieChart');
+  if(!canvas) return;
+
+  const labels  = rows.map(r=>r.ticker);
+  const data    = mode==='value' ? rows.map(r=>r.value||0) : rows.map(r=>r.shares||0);
+  const total   = data.reduce((s,v)=>s+v,0);
+  const colors  = rows.map((_,i)=>PIE_COLORS[i % PIE_COLORS.length]);
+
+  if(pieInst){ pieInst.destroy(); pieInst=null; }
+
+  const isDark = document.documentElement.getAttribute('data-theme')==='dark';
+  const textCol = isDark ? '#C8BFA8' : '#5A5952';
+
+  pieInst = new Chart(canvas, {
+    type: 'doughnut',
+    data: { labels, datasets:[{ data, backgroundColor: colors, borderColor: isDark?'#1E1C17':'#F5F0E8', borderWidth: 2, hoverOffset: 6 }] },
+    options: {
+      cutout: '65%',
+      responsive: true,
+      maintainAspectRatio: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => {
+              const val = ctx.parsed;
+              const pct = total > 0 ? (val/total*100).toFixed(1) : 0;
+              if(mode==='value') return ` GH₵${fmt(val,2)} (${pct}%)`;
+              return ` ${fmt(val,0)} shares (${pct}%)`;
+            }
+          }
+        }
+      }
+    }
+  });
+
+  // Render legend
+  const legend = document.getElementById('pie-legend');
+  const sorted = [...rows].map((r,i)=>({...r, color:colors[i], val:data[i]}))
+    .sort((a,b)=>b.val-a.val);
+
+  legend.innerHTML = sorted.map(r=>{
+    const pct = total > 0 ? (r.val/total*100).toFixed(1) : 0;
+    return `<div style="display:flex;align-items:center;gap:8px;">
+      <div style="width:10px;height:10px;border-radius:2px;background:${r.color};flex-shrink:0;"></div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:12.5px;font-weight:600;">${r.ticker} <span style="color:var(--text-faint);font-weight:400;">${pct}%</span></div>
+        <div style="font-size:11px;color:var(--text-dim);">${mode==='value'?'GH₵'+fmt(r.val,2):fmt(r.val,0)+' shares'}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function switchPie(mode, btn){
+  pieMode = mode;
+  document.querySelectorAll('#pie-by-value,#pie-by-shares').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  drawPie(liveHoldings, mode);
+}
 const SB_NOTIF_URL  = 'https://jyhamtniuhlsbwcdfspa.supabase.co';
 const SB_NOTIF_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp5aGFtdG5pdWhsc2J3Y2Rmc3BhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxNjE1MTgsImV4cCI6MjA5NzczNzUxOH0.1nT-wpRjjAIpgUk_BDTlu3z4Cvuz_G0nKX9l65cwpF0';
 
