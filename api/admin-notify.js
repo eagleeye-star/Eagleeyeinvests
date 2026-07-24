@@ -1,20 +1,13 @@
-/* EagleEyE — /api/admin-notify
-   POST: Send in-app notification to users (no push subscription needed)
-   GET:  Fetch notification history
-   DELETE: Delete a notification
-*/
+/* EagleEyE — /api/admin-notify */
 const { toEvent, send } = require('../lib/adapter');
 
 const SB_URL     = process.env.SUPABASE_URL     || 'https://jyhamtniuhlsbwcdfspa.supabase.co';
 const SB_SERVICE = process.env.SUPABASE_SERVICE_KEY;
+const SB_ANON    = process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp5aGFtdG5pdWhsc2J3Y2Rmc3BhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxNjE1MTgsImV4cCI6MjA5NzczNzUxOH0.1nT-wpRjjAIpgUk_BDTlu3z4Cvuz_G0nKX9l65cwpF0';
 const ADMIN_SECRET = process.env.ADMIN_SECRET;
 
 module.exports = async function(req, res) {
   const event = await toEvent(req);
-  const headers = {
-    'Access-Control-Allow-Origin': '*',
-    'Content-Type': 'application/json',
-  };
 
   if (req.method === 'OPTIONS') { res.status(200).end(); return; }
 
@@ -25,97 +18,100 @@ module.exports = async function(req, res) {
     return;
   }
 
-  const qs = event.queryStringParameters || {};
+  // Use service key if available, fall back to anon
+  const KEY = SB_SERVICE || SB_ANON;
   const sbHeaders = {
     'Content-Type': 'application/json',
-    'apikey': SB_SERVICE,
-    'Authorization': `Bearer ${SB_SERVICE}`,
+    'apikey': KEY,
+    'Authorization': `Bearer ${KEY}`,
+    'Prefer': 'return=representation',
   };
 
-  // GET — fetch notification history (admin-created notifications)
-  if (req.method === 'GET') {
-    if (qs.action === 'history') {
-      const r = await fetch(`${SB_URL}/rest/v1/admin_notifications?select=*&order=created_at.desc&limit=50`, {
-        headers: sbHeaders
-      });
+  const qs = event.queryStringParameters || {};
+
+  try {
+    // GET — history
+    if (req.method === 'GET' && qs.action === 'history') {
+      const r = await fetch(`${SB_URL}/rest/v1/admin_notifications?select=*&order=created_at.desc&limit=50`, { headers: sbHeaders });
       const data = await r.json();
+      if (!r.ok) { res.status(200).json({ notifications: [], error: JSON.stringify(data) }); return; }
       res.status(200).json({ notifications: Array.isArray(data) ? data : [] });
       return;
     }
-  }
 
-  // DELETE — remove notification
-  if (req.method === 'DELETE' && qs.id) {
-    await fetch(`${SB_URL}/rest/v1/admin_notifications?id=eq.${qs.id}`, {
-      method: 'DELETE', headers: sbHeaders
-    });
-    await fetch(`${SB_URL}/rest/v1/user_notifications?notification_id=eq.${qs.id}`, {
-      method: 'DELETE', headers: sbHeaders
-    });
-    res.status(200).json({ success: true });
-    return;
-  }
-
-  // POST — send notification
-  if (req.method === 'POST') {
-    const body = JSON.parse(event.body || '{}');
-    const { title, body: message, type='info', url=null, target='all' } = body;
-
-    if (!title || !message) {
-      res.status(400).json({ error: 'Title and body are required.' });
+    // DELETE
+    if (req.method === 'DELETE' && qs.id) {
+      await fetch(`${SB_URL}/rest/v1/user_notifications?notification_id=eq.${qs.id}`, { method:'DELETE', headers: sbHeaders });
+      await fetch(`${SB_URL}/rest/v1/admin_notifications?id=eq.${qs.id}`, { method:'DELETE', headers: sbHeaders });
+      res.status(200).json({ success: true });
       return;
     }
 
-    // 1. Save notification to admin_notifications table
-    const notifRes = await fetch(`${SB_URL}/rest/v1/admin_notifications`, {
-      method: 'POST',
-      headers: { ...sbHeaders, 'Prefer': 'return=representation' },
-      body: JSON.stringify({ title, body: message, type, url, target, created_at: new Date().toISOString() }),
-    });
-    const notifData = await notifRes.json();
-    const notifId = Array.isArray(notifData) ? notifData[0]?.id : notifData?.id;
+    // POST — send
+    if (req.method === 'POST') {
+      const body = JSON.parse(event.body || '{}');
+      const { title, body: message, type='info', url=null, target='all' } = body;
 
-    if (!notifId) {
-      res.status(500).json({ error: 'Failed to save notification.' });
+      if (!title || !message) { res.status(400).json({ error: 'Title and body required.' }); return; }
+
+      // Save admin notification
+      const notifRes = await fetch(`${SB_URL}/rest/v1/admin_notifications`, {
+        method: 'POST', headers: sbHeaders,
+        body: JSON.stringify({ title, body: message, type, url, target }),
+      });
+      const notifText = await notifRes.text();
+      let notifData;
+      try { notifData = JSON.parse(notifText); } catch(e) { notifData = []; }
+
+      if (!notifRes.ok) {
+        res.status(500).json({ error: 'Failed to save notification: ' + notifText.substring(0,200) });
+        return;
+      }
+
+      const notifId = Array.isArray(notifData) ? notifData[0]?.id : notifData?.id;
+      if (!notifId) { res.status(500).json({ error: 'No notification ID returned.' }); return; }
+
+      // Get target users
+      let usersUrl = `${SB_URL}/rest/v1/profiles?select=id,plan`;
+      if (target === 'premium') usersUrl += '&plan=eq.premium';
+      if (target === 'free')    usersUrl += '&plan=neq.premium';
+
+      const usersRes = await fetch(usersUrl, { headers: sbHeaders });
+      const users = await usersRes.json();
+
+      if (!Array.isArray(users) || users.length === 0) {
+        res.status(200).json({ count: 0, notifId });
+        return;
+      }
+
+      // Insert user notifications
+      const userNotifs = users.map(u => ({
+        user_id: u.id, notification_id: notifId,
+        title, body: message, type, url, is_read: false,
+      }));
+
+      const unRes = await fetch(`${SB_URL}/rest/v1/user_notifications`, {
+        method: 'POST',
+        headers: { ...sbHeaders, 'Prefer': 'return=minimal' },
+        body: JSON.stringify(userNotifs),
+      });
+
+      if (!unRes.ok) {
+        const unText = await unRes.text();
+        res.status(500).json({ error: 'Failed to create user notifications: ' + unText.substring(0,200) });
+        return;
+      }
+
+      res.status(200).json({ success: true, count: users.length, notifId });
       return;
     }
 
-    // 2. Get target users
-    let usersUrl = `${SB_URL}/rest/v1/profiles?select=id,plan`;
-    if (target === 'premium') usersUrl += '&plan=eq.premium';
-    if (target === 'free')    usersUrl += '&plan=neq.premium';
+    res.status(405).json({ error: 'Method not allowed.' });
 
-    const usersRes = await fetch(usersUrl, { headers: sbHeaders });
-    const users = await usersRes.json();
-
-    if (!Array.isArray(users) || users.length === 0) {
-      res.status(200).json({ count: 0, message: 'No users found for target.' });
-      return;
-    }
-
-    // 3. Insert user_notifications for each user
-    const userNotifs = users.map(u => ({
-      user_id: u.id,
-      notification_id: notifId,
-      title,
-      body: message,
-      type,
-      url,
-      is_read: false,
-      created_at: new Date().toISOString(),
-    }));
-
-    await fetch(`${SB_URL}/rest/v1/user_notifications`, {
-      method: 'POST',
-      headers: { ...sbHeaders, 'Prefer': 'return=minimal' },
-      body: JSON.stringify(userNotifs),
-    });
-
-    res.status(200).json({ success: true, count: users.length });
-    return;
+  } catch(err) {
+    console.error('admin-notify error:', err);
+    res.status(500).json({ error: err.message });
   }
-
-  res.status(405).json({ error: 'Method not allowed.' });
 };
 
 module.exports.config = { api: { bodyParser: false } };

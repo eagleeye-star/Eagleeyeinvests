@@ -12,8 +12,13 @@ module.exports = async function(req, res) {
   let result;
 
   // Public endpoints — no auth
-  if (url.includes('gse-data'))  { result = await gsePublic(event); send(res, result); return; }
-  if (url.includes('/feedback'))  { result = await feedback(event);  send(res, result); return; }
+  if (url.includes('gse-data'))           { result = await gsePublic(event); send(res, result); return; }
+  if (url.includes('/feedback') && 
+      event.httpMethod !== 'GET')         { result = await feedback(event);  send(res, result); return; }
+  if (url.includes('user-notifications')) {
+    // Public read for user's own notifications — auth via JWT
+    result = await gsePublic(event); send(res, result); return;
+  }
 
   // Admin endpoints
   if      (url.includes('admin-feedback')) result = await adminFeedback(event);
