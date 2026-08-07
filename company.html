@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Company — EagleEyE</title>
+<link rel="stylesheet" href="style.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>document.documentElement.setAttribute("data-theme",localStorage.getItem("ee_theme")||"dark");</script>
+<style>
+.co-wrap{max-width:1000px;margin:0 auto;padding:28px 24px 60px;}
+.co-header{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:24px;margin-bottom:18px;}
+.co-ticker{font-size:32px;font-weight:700;font-family:var(--font-display);}
+.co-name{font-size:15px;color:var(--text-dim);margin-top:4px;}
+.co-price{font-size:40px;font-weight:700;font-family:var(--font-display);margin-top:12px;}
+.co-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px;}
+.co-stat{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;}
+.co-stat .lbl{font-size:10.5px;color:var(--text-faint);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:6px;}
+.co-stat .val{font-size:16px;font-weight:600;font-family:var(--font-display);}
+.co-body{display:grid;grid-template-columns:2fr 1fr;gap:16px;}
+.co-links a{display:flex;align-items:center;gap:8px;padding:10px 14px;border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);text-decoration:none;font-size:13px;margin-bottom:8px;transition:border-color .15s;}
+.co-links a:hover{border-color:var(--gold-dim);color:var(--gold-bright);}
+@media(max-width:700px){.co-grid{grid-template-columns:repeat(2,1fr);}.co-body{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+<div id="chrome-header"></div>
+<div class="co-wrap">
+  <div id="co-content"><div style="text-align:center;padding:60px;color:var(--text-faint);">Loading…</div></div>
+</div>
+<div id="chrome-footer"></div>
+<script src="auth.js"></script>
+<script src="auth-guard.js"></script>
+<script src="data.js"></script>
+<script>
+mountChrome('company.html');
+
+const ticker = new URLSearchParams(window.location.search).get('t')||'';
+const stock  = gseStocks.find(s=>s.ticker===ticker.toUpperCase());
+
+if(!stock){
+  document.getElementById('co-content').innerHTML=`<div style="text-align:center;padding:60px;">
+    <div style="font-size:40px;margin-bottom:16px;">🔍</div>
+    <div style="font-size:18px;font-weight:600;margin-bottom:8px;">Stock not found</div>
+    <div style="color:var(--text-dim);margin-bottom:20px;">Ticker "${ticker}" wasn't found in GSE listings.</div>
+    <a href="market.html" class="btn btn-gold">← Back to Market Centre</a>
+  </div>`;
+} else {
+  const up = stock.chg >= 0;
+  const mktCapVal = stock.price * stock.shares;
+  const mktCap = mktCapVal >= 1000 ? 'GH₵'+fmt(mktCapVal/1000,1)+'B' : 'GH₵'+fmt(mktCapVal,0)+'M';
+  const annualReport = ANNUAL_REPORTS?.find(r=>r.ticker===ticker);
+
+  document.getElementById('co-content').innerHTML=`
+    <a href="market.html" style="color:var(--text-dim);font-size:13px;text-decoration:none;display:inline-flex;align-items:center;gap:6px;margin-bottom:16px;">← Market Centre</a>
+
+    <div class="co-header">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:16px;">
+        <div>
+          <div class="co-ticker">${stock.ticker}</div>
+          <div class="co-name">${stock.name} · <span style="color:var(--gold-bright);">${stock.sector}</span></div>
+          <div style="margin-top:12px;display:flex;align-items:baseline;gap:12px;">
+            <div class="co-price">GH₵${fmt(stock.price,2)}</div>
+            <div class="${up?'up':'dn'}" style="font-size:18px;font-family:var(--font-mono);">${up?'+':''}${fmt(stock.chg,2)}% today</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button onclick="addToWatchlist('${stock.ticker}')" class="btn btn-ghost">+ Watchlist</button>
+          <a href="dashboard.html" class="btn btn-gold">+ Add to portfolio</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="co-grid">
+      <div class="co-stat"><div class="lbl">Market Cap</div><div class="val">${mktCap}</div></div>
+      <div class="co-stat"><div class="lbl">Shares Outstanding</div><div class="val">${fmt(stock.shares,0)}M</div></div>
+      <div class="co-stat"><div class="lbl">Est. Dividend Yield</div><div class="val">${stock.yield||0}%</div></div>
+      <div class="co-stat"><div class="lbl">Volume today</div><div class="val">${stock.volume>0?fmt(stock.volume,0):'—'}</div></div>
+    </div>
+
+    <div class="co-body">
+      <div>
+        <div class="panel" style="margin-bottom:16px;">
+          <div class="panel-head"><div class="panel-title">About ${stock.name}</div></div>
+          <div style="padding:16px;font-size:13px;color:var(--text-dim);line-height:1.7;">
+            ${getCompanyDesc(stock.ticker, stock.name, stock.sector)}
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><div class="panel-title">Key metrics</div></div>
+          <table style="width:100%;border-collapse:collapse;font-size:13px;">
+            <tbody>
+              <tr style="border-top:1px solid var(--border-soft);"><td style="padding:10px 16px;color:var(--text-dim);">Ticker</td><td style="padding:10px 16px;font-family:var(--font-mono);text-align:right;">${stock.ticker}</td></tr>
+              <tr style="border-top:1px solid var(--border-soft);"><td style="padding:10px 16px;color:var(--text-dim);">Sector</td><td style="padding:10px 16px;text-align:right;">${stock.sector}</td></tr>
+              <tr style="border-top:1px solid var(--border-soft);"><td style="padding:10px 16px;color:var(--text-dim);">Current price</td><td style="padding:10px 16px;font-family:var(--font-mono);text-align:right;">GH₵${fmt(stock.price,2)}</td></tr>
+              <tr style="border-top:1px solid var(--border-soft);"><td style="padding:10px 16px;color:var(--text-dim);">Today's change</td><td style="padding:10px 16px;font-family:var(--font-mono);text-align:right;" class="${up?'up':'dn'}">${up?'+':''}${fmt(stock.chg,2)}%</td></tr>
+              <tr style="border-top:1px solid var(--border-soft);"><td style="padding:10px 16px;color:var(--text-dim);">Market cap</td><td style="padding:10px 16px;font-family:var(--font-mono);text-align:right;">${mktCap}</td></tr>
+              <tr style="border-top:1px solid var(--border-soft);"><td style="padding:10px 16px;color:var(--text-dim);">Shares outstanding</td><td style="padding:10px 16px;font-family:var(--font-mono);text-align:right;">${fmt(stock.shares,2)}M</td></tr>
+              <tr style="border-top:1px solid var(--border-soft);"><td style="padding:10px 16px;color:var(--text-dim);">Est. dividend yield</td><td style="padding:10px 16px;font-family:var(--font-mono);text-align:right;">${stock.yield||0}%</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div>
+        <div class="panel" style="margin-bottom:16px;">
+          <div class="panel-head"><div class="panel-title">Research</div></div>
+          <div style="padding:14px;">
+            <a href="research.html?t=${stock.ticker}" class="co-links" style="display:flex;align-items:center;gap:8px;padding:10px 14px;border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);text-decoration:none;font-size:13px;margin-bottom:8px;">
+              ◆ Eagle Research Score →
+            </a>
+            <a href="screener.html" class="co-links" style="display:flex;align-items:center;gap:8px;padding:10px 14px;border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);text-decoration:none;font-size:13px;margin-bottom:8px;">
+              ⊞ Compare in Screener →
+            </a>
+            <a href="alerts.html" class="co-links" style="display:flex;align-items:center;gap:8px;padding:10px 14px;border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);text-decoration:none;font-size:13px;">
+              ⚑ Set price alert →
+            </a>
+          </div>
+        </div>
+
+        ${annualReport ? `<div class="panel">
+          <div class="panel-head"><div class="panel-title">Annual reports</div></div>
+          <div style="padding:14px;">
+            ${annualReport.reports.map(r=>`<a href="${r.url}" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:8px;padding:8px 0;color:var(--text-dim);text-decoration:none;font-size:13px;border-bottom:1px solid var(--border-soft);">📄 ${r.year} Annual Report →</a>`).join('')}
+            <a href="${annualReport.gseUrl}" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:8px;padding:8px 0;color:var(--text-dim);text-decoration:none;font-size:13px;">🏛 GSE Company Profile →</a>
+          </div>
+        </div>` : ''}
+      </div>
+    </div>`;
+
+  // Update live price
+  loadLiveData(()=>{
+    const s = gseStocks.find(s=>s.ticker===ticker);
+    if(s){
+      document.querySelector('.co-price').textContent = 'GH₵'+fmt(s.price,2);
+    }
+  });
+}
+
+function getCompanyDesc(ticker, name, sector){
+  const descs = {
+    'GCB':   'GCB Bank Ltd is Ghana\'s largest indigenous bank by total assets and branch network. It offers a full range of banking services to individuals, businesses and institutions across Ghana.',
+    'MTNGH': 'MTN Ghana Ltd is the country\'s largest mobile network operator with over 26 million subscribers. Listed on the GSE in 2018, it is one of the most traded stocks on the exchange.',
+    'EGH':   'Ecobank Ghana Ltd is a subsidiary of Ecobank Transnational Inc., operating across retail, corporate and investment banking segments in Ghana.',
+    'ETI':   'Ecobank Transnational Inc. is the holding company of the Ecobank Group, operating in 35 African countries making it one of Africa\'s largest banking networks.',
+    'GOIL':  'GOIL Company Ltd is a downstream oil marketing company and one of Ghana\'s largest fuel retailers, operating a nationwide network of petrol stations.',
+    'GGBL':  'Guinness Ghana Breweries Ltd manufactures and distributes alcoholic and non-alcoholic beverages including Guinness, Malta Guinness, and Star Beer.',
+    'KPLC':  'Kasapreko Company PLC is Ghana\'s leading indigenous beverage manufacturer producing over 50 brands. It completed the largest manufacturing IPO in Ghanaian history in 2026.',
+    'EGL':   'Enterprise Group Ltd is a diversified financial services conglomerate with businesses in insurance, pensions, properties and financial advisory services.',
+    'TOTAL': 'TotalEnergies Marketing Ghana Ltd is a downstream petroleum marketing company operating a network of service stations across Ghana.',
+    'SIC':   'SIC Insurance Company Ltd is Ghana\'s oldest and one of its largest insurance companies, providing general insurance, life insurance and reinsurance services.',
+    'SCB':   'Standard Chartered Bank Ghana Ltd is a subsidiary of Standard Chartered PLC, providing corporate, retail and private banking services in Ghana.',
+    'BOPP':  'Benso Oil Palm Plantation Ltd is an agricultural company engaged in oil palm cultivation and processing in the Western Region of Ghana.',
+    'CAL':   'CalBank PLC is a universal bank providing retail, corporate and SME banking services with a focus on digital banking innovation.',
+    'RBGH':  'Republic Bank Ghana Ltd is a commercial bank providing a broad range of banking services to individuals and businesses across Ghana.',
+    'ZEN':   'ZEN Petroleum Holdings PLC is a downstream petroleum company operating fuel retail stations across Ghana, listed on the GSE in 2026.',
+  };
+  return descs[ticker] || `${name} is a ${sector.toLowerCase()} company listed on the Ghana Stock Exchange. Visit the company\'s investor relations page or the GSE profile for detailed financial information.`;
+}
+
+function addToWatchlist(ticker){
+  const wl = JSON.parse(localStorage.getItem('ee_watchlist')||'[]');
+  if(wl.find(w=>w.ticker===ticker)){
+    alert(ticker+' is already on your watchlist.');
+    return;
+  }
+  const s = gseStocks.find(s=>s.ticker===ticker);
+  wl.push({ ticker, name: s?.name||ticker, sector: s?.sector||'', addedAt: new Date().toISOString() });
+  localStorage.setItem('ee_watchlist', JSON.stringify(wl));
+  alert('✓ '+ticker+' added to your watchlist!');
+}
+</script>
+</body>
+</html>

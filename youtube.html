@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Road to GH₵1M — EagleEyE</title>
+<link rel="stylesheet" href="style.css">
+<script>document.documentElement.setAttribute("data-theme",localStorage.getItem("ee_theme")||"dark");</script>
+<style>
+.yt-wrap{max-width:960px;margin:0 auto;padding:28px 24px 60px;}
+.yt-hero{background:linear-gradient(135deg,var(--panel) 0%,rgba(212,165,55,0.08) 100%);border:1px solid var(--gold-dim);border-radius:var(--radius);padding:32px;margin-bottom:28px;text-align:center;}
+.yt-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;}
+.ep-card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;transition:border-color .15s;}
+.ep-card:hover{border-color:var(--gold-dim);}
+.ep-thumb{width:100%;aspect-ratio:16/9;background:var(--panel-2);display:flex;align-items:center;justify-content:center;font-size:40px;position:relative;}
+.ep-thumb .play{position:absolute;width:52px;height:52px;background:rgba(212,165,55,0.9);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;}
+.ep-body{padding:14px;}
+.ep-num{font-size:10.5px;color:var(--gold-bright);font-weight:600;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.06em;}
+.ep-title{font-size:14px;font-weight:600;margin-bottom:6px;line-height:1.4;}
+.ep-desc{font-size:12px;color:var(--text-dim);line-height:1.5;}
+.ep-date{font-size:11px;color:var(--text-faint);font-family:var(--font-mono);margin-top:8px;}
+.progress-bar{height:8px;background:var(--panel-3);border-radius:4px;overflow:hidden;margin:16px 0;}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--gold-dim),var(--gold-bright));border-radius:4px;}
+</style>
+</head>
+<body>
+<div id="chrome-header"></div>
+<div class="yt-wrap">
+  <div class="yt-hero">
+    <div style="font-size:13px;color:var(--gold-bright);font-weight:600;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">YouTube Series</div>
+    <div style="font-family:var(--font-display);font-size:32px;font-weight:700;margin-bottom:10px;">Road to GH₵1,000,000</div>
+    <div style="font-size:14px;color:var(--text-dim);max-width:520px;margin:0 auto 20px;">A public journey investing on the Ghana Stock Exchange — tracking every trade, dividend, and milestone from GH₵0 to GH₵1 million by 2030.</div>
+    <div style="max-width:400px;margin:0 auto;">
+      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px;">
+        <span style="color:var(--text-faint);">Progress to GH₵1M</span>
+        <span id="yt-progress-pct" style="color:var(--gold-bright);font-family:var(--font-mono);">—</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" id="yt-progress-bar" style="width:0%;"></div></div>
+      <div id="yt-progress-val" style="font-size:12px;color:var(--text-dim);">Add holdings to your portfolio to track progress</div>
+    </div>
+    <div style="margin-top:20px;">
+      <a href="https://www.youtube.com/@EagleEyEGhana" target="_blank" rel="noopener" class="btn btn-gold">▶ Subscribe on YouTube</a>
+    </div>
+  </div>
+
+  <div style="font-size:20px;font-weight:600;font-family:var(--font-display);margin-bottom:16px;">Episodes</div>
+  <div class="yt-grid">
+    ${[
+      {ep:1, title:'Starting from scratch — my GSE investment plan', desc:'I lay out my strategy for growing GH₵0 to GH₵1M by 2030 using the Ghana Stock Exchange. Which stocks, how much to invest, and why GSE?', date:'Jan 2026', icon:'📋'},
+      {ep:2, title:'My first GSE trades — buying GCB, MTNGH and ETI', desc:'I make my first purchases on the GSE through EDC Stockbrokers. Walk-through of the process, fees, and CSD account setup.', date:'Feb 2026', icon:'📈'},
+      {ep:3, title:'Kasapreko IPO — I applied for shares. Here\'s what happened', desc:'Kasapreko announced Ghana\'s biggest manufacturing IPO. I applied for shares and received approximately 40% allotment. Full breakdown.', date:'Apr 2026', icon:'🚀'},
+      {ep:4, title:'Q1 2026 portfolio review — up or down?', desc:'Three months in. I review every holding, calculate total return, and discuss what I would do differently.', date:'Apr 2026', icon:'📊'},
+      {ep:5, title:'Dividend income — my first GSE dividend payment', desc:'I received my first dividend from EGH. How much? How does the process work? Is dividend investing on the GSE worth it?', date:'Jul 2026', icon:'💰'},
+      {ep:6, title:'ZEN Petroleum listing — should you buy the new stock?', desc:'ZEN Petroleum Holdings listed on the GSE. I analyse the company, valuation and whether it deserves a place in my portfolio.', date:'Apr 2026', icon:'⛽'},
+    ].map(e=>`<div class="ep-card">
+      <div class="ep-thumb">${e.icon}<div class="play">▶</div></div>
+      <div class="ep-body">
+        <div class="ep-num">Episode ${e.ep}</div>
+        <div class="ep-title">${e.title}</div>
+        <div class="ep-desc">${e.desc}</div>
+        <div class="ep-date">${e.date}</div>
+      </div>
+    </div>`).join('')}
+  </div>
+</div>
+<div id="chrome-footer"></div>
+<script src="auth.js"></script>
+<script src="auth-guard.js"></script>
+<script src="data.js"></script>
+<script>
+mountChrome('youtube.html');
+
+// Show portfolio progress
+const profile = JSON.parse(localStorage.getItem('ee_profile')||'null');
+const goal    = parseFloat(profile?.goal||1000000);
+const val     = totalValue || 0;
+if(val > 0){
+  const pct = Math.min((val/goal*100),100);
+  document.getElementById('yt-progress-bar').style.width = pct+'%';
+  document.getElementById('yt-progress-pct').textContent = pct.toFixed(2)+'%';
+  document.getElementById('yt-progress-val').textContent = 'GH₵'+fmt(val,0)+' of GH₵'+fmt(goal,0)+' goal';
+}
+</script>
+</body>
+</html>

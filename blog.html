@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Market Commentary — EagleEyE</title>
+<link rel="stylesheet" href="style.css">
+<script>document.documentElement.setAttribute("data-theme",localStorage.getItem("ee_theme")||"dark");</script>
+<style>
+.blog-wrap{max-width:860px;margin:0 auto;padding:28px 24px 60px;}
+.post-card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:24px;margin-bottom:16px;transition:border-color .15s;}
+.post-card:hover{border-color:var(--gold-dim);}
+.post-tag{display:inline-block;font-size:10.5px;padding:2px 8px;border-radius:10px;background:var(--gold-glow);color:var(--gold-bright);font-weight:500;margin-bottom:10px;}
+.post-title{font-size:18px;font-weight:600;font-family:var(--font-display);margin-bottom:8px;line-height:1.4;}
+.post-excerpt{font-size:13px;color:var(--text-dim);line-height:1.7;margin-bottom:12px;}
+.post-meta{font-size:11.5px;color:var(--text-faint);font-family:var(--font-mono);}
+.post-body{display:none;font-size:13.5px;line-height:1.8;color:var(--text);margin-top:16px;padding-top:16px;border-top:1px solid var(--border-soft);}
+.post-body.open{display:block;}
+</style>
+</head>
+<body>
+<div id="chrome-header"></div>
+<div class="blog-wrap">
+  <div style="margin-bottom:28px;">
+    <div style="font-family:var(--font-display);font-size:28px;font-weight:600;">Market Commentary</div>
+    <div style="font-size:13px;color:var(--text-dim);margin-top:6px;">Weekly GSE insights and investment analysis by EagleEyE</div>
+  </div>
+  <div id="posts-grid"></div>
+</div>
+<div id="chrome-footer"></div>
+<script src="auth.js"></script>
+<script src="auth-guard.js"></script>
+<script src="data.js"></script>
+<script>
+mountChrome('blog.html');
+
+const POSTS = [
+  {
+    id:1, tag:'Market Update', date:'Jul 2026',
+    title:'GSE posts strong H1 2026 performance — what it means for investors',
+    excerpt:'The Ghana Stock Exchange Composite Index gained over 69% year-to-date through June 2026, outperforming most emerging market benchmarks. We break down the key drivers and which sectors led the rally.',
+    body:`<p>The first half of 2026 has been remarkable for GSE investors. The GSE-CI gained approximately 69% year-to-date, driven primarily by the banking sector and the historic Kasapreko IPO.</p>
+    <p><strong>Key drivers of the rally:</strong></p>
+    <p>1. <strong>Banking sector strength</strong> — GCB Bank, Ecobank Ghana, and Republic Bank all delivered strong earnings, supported by high interest rate environment and improved asset quality.</p>
+    <p>2. <strong>Kasapreko IPO</strong> — The GH₵1.72 billion IPO was the largest manufacturing IPO in Ghanaian history, bringing new investor attention to the GSE and driving overall market sentiment higher.</p>
+    <p>3. <strong>Currency stability</strong> — The Ghana Cedi showed relative stability in H1 2026 compared to prior years, reducing foreign investor currency risk and attracting more institutional capital.</p>
+    <p><strong>What to watch in H2 2026:</strong> Bank of Ghana monetary policy decisions, Q2 earnings releases, and any new IPO announcements will be key catalysts. Investors should monitor dividend declarations as several companies enter their payout season.</p>`
+  },
+  {
+    id:2, tag:'Stock Analysis', date:'Jun 2026',
+    title:'Kasapreko (KPLC) — what the IPO means for your portfolio',
+    excerpt:'Kasapreko Company PLC listed on the GSE after raising GH₵1.72 billion. With 40% allotments and a current price above the offer price, we analyse the investment case.',
+    body:`<p>Kasapreko Company PLC officially commenced trading on the GSE on June 13, 2026 at an offer price of GH₵1.20 per share. As of early July, the stock trades around GH₵2.10 — a 75% return for IPO subscribers.</p>
+    <p><strong>The investment case:</strong></p>
+    <p>Kasapreko is Ghana's leading indigenous beverage manufacturer with over 50 brands distributed across Ghana and West Africa. The company's strong brand portfolio, distribution network, and growth into non-alcoholic beverages make it an attractive long-term hold.</p>
+    <p><strong>Key risks to watch:</strong> Competition from multinational brands, raw material costs (particularly imported inputs), and consumer spending sensitivity to macroeconomic conditions.</p>
+    <p>For investors who received partial allotments (~40%), the decision now is whether to hold for long-term growth or take profits at the current elevated price.</p>`
+  },
+  {
+    id:3, tag:'Dividend Season', date:'Jun 2026',
+    title:'Q2 2026 dividend calendar — which GSE stocks are paying out',
+    excerpt:'Several major GSE companies have declared dividends for Q2 2026. Here is a breakdown of ex-dates, payment dates and estimated yields for income-focused investors.',
+    body:`<p>Q2 2026 has been a strong dividend season for GSE investors. Key payouts include:</p>
+    <p><strong>Ecobank Ghana (EGH)</strong> — GH₵1.1132 per share, ex-date June 10, payment July 8. At the current price this represents approximately 7% yield — one of the highest on the exchange.</p>
+    <p><strong>GCB Bank (GCB)</strong> — GH₵2.80 per share, ex-date April 22, paid May 15. At 8% yield, GCB remains Ghana's most generous dividend payer.</p>
+    <p><strong>Standard Chartered (SCB)</strong> — GH₵4.65 per share, ex-date June 20, payment July 15.</p>
+    <p><strong>Strategy tip:</strong> To receive a dividend you must hold shares before the ex-dividend date. Buying on or after the ex-date means you will not receive the upcoming dividend but may benefit from the lower post-dividend price.</p>`
+  },
+];
+
+document.getElementById('posts-grid').innerHTML = POSTS.map(p=>`
+  <div class="post-card">
+    <span class="post-tag">${p.tag}</span>
+    <div class="post-title">${p.title}</div>
+    <div class="post-excerpt">${p.excerpt}</div>
+    <div class="post-meta">${p.date} · EagleEyE Research</div>
+    <div class="post-body" id="post-body-${p.id}">${p.body}</div>
+    <button class="btn btn-ghost btn-sm" style="margin-top:12px;" onclick="togglePost(${p.id},this)">Read more</button>
+  </div>`).join('');
+
+function togglePost(id, btn){
+  const body = document.getElementById('post-body-'+id);
+  const open = body.classList.toggle('open');
+  btn.textContent = open ? 'Show less' : 'Read more';
+}
+</script>
+</body>
+</html>

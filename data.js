@@ -248,8 +248,12 @@ const NAV_ITEMS = [
   {href:'gse-events.html',  label:'GSE Events'},
   {href:'market.html',      label:'Market'},
   {href:'companies.html',   label:'Companies'},
+  {href:'compare.html',     label:'Compare'},
   {href:'screener.html',    label:'Screener'},
   {href:'news.html',        label:'News'},
+  {href:'blog.html',        label:'Commentary'},
+  {href:'calendar.html',    label:'Econ Calendar'},
+  {href:'youtube.html',     label:'Road to 1M'},
   {href:'alerts.html',      label:'Alerts'},
   {href:'pricing.html',     label:'Pricing'},
   {href:'profile.html',     label:'My Profile'},
@@ -290,6 +294,13 @@ function buildHeader(activePage){
       </a>
       <nav class="main" id="mainNav">${navHtml}</nav>
       <div style="display:flex;align-items:center;gap:8px;">
+        <div style="position:relative;">
+          <input type="text" id="global-search" placeholder="Search stocks…" autocomplete="off"
+            style="background:var(--panel-2);border:1px solid var(--border);color:var(--text);padding:6px 12px 6px 30px;border-radius:20px;font-size:12px;font-family:var(--font-body);width:160px;outline:none;"
+            oninput="globalSearch(this.value)" onfocus="this.style.borderColor='var(--gold-dim)'" onblur="setTimeout(()=>document.getElementById('search-results').style.display='none',200)">
+          <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text-faint);font-size:12px;">🔍</span>
+          <div id="search-results" style="display:none;position:absolute;top:36px;left:0;right:0;background:var(--panel);border:1px solid var(--border);border-radius:var(--radius-sm);box-shadow:0 8px 24px rgba(0,0,0,0.2);z-index:500;max-height:280px;overflow-y:auto;"></div>
+        </div>
         <div class="header-actions">${authHtml}</div>
         <button class="theme-toggle" onclick="toggleTheme()" id="themeToggleBtn" title="Switch theme" aria-label="Toggle light/dark theme">☀️</button>
         <button class="hamburger" id="hamburgerBtn" onclick="toggleMobileNav()" aria-label="Menu">
@@ -409,6 +420,56 @@ function mockAction(e, label){
   toast.classList.add('show');
   clearTimeout(window._mockTimer);
   window._mockTimer = setTimeout(()=>toast.classList.remove('show'), 4500);
+}
+
+/* ---- Global Search ---- */
+function globalSearch(q){
+  const el = document.getElementById('search-results');
+  if(!el) return;
+  if(!q || q.length < 1){ el.style.display='none'; return; }
+  q = q.toLowerCase();
+
+  // Search stocks
+  const stocks = gseStocks.filter(s=>
+    s.ticker.toLowerCase().includes(q) || s.name.toLowerCase().includes(q)
+  ).slice(0,6);
+
+  // Search pages
+  const pages = [
+    {label:'Portfolio',    href:'dashboard.html', icon:'📊'},
+    {label:'Market Centre',href:'market.html',    icon:'📈'},
+    {label:'Watchlist',    href:'watchlist.html', icon:'👁'},
+    {label:'GSE Events',   href:'gse-events.html',icon:'📅'},
+    {label:'Dividends',    href:'dividends.html', icon:'💰'},
+    {label:'Eagle Research',href:'research.html', icon:'◆'},
+    {label:'Screener',     href:'screener.html',  icon:'⊞'},
+    {label:'Compare',      href:'compare.html',   icon:'⚖'},
+    {label:'News',         href:'news.html',      icon:'📰'},
+    {label:'Commentary',   href:'blog.html',      icon:'📝'},
+    {label:'Road to 1M',   href:'youtube.html',   icon:'▶'},
+    {label:'Econ Calendar',href:'calendar.html',  icon:'🗓'},
+    {label:'Alerts',       href:'alerts.html',    icon:'⚑'},
+    {label:'Profile',      href:'profile.html',   icon:'👤'},
+  ].filter(p=>p.label.toLowerCase().includes(q)).slice(0,3);
+
+  if(!stocks.length && !pages.length){ el.style.display='none'; return; }
+
+  el.style.display='block';
+  el.innerHTML = [
+    stocks.length ? '<div style="padding:6px 12px;font-size:10px;color:var(--text-faint);text-transform:uppercase;letter-spacing:0.06em;">Stocks</div>' : '',
+    ...stocks.map(s=>`
+      <a href="company.html?t=${s.ticker}" style="display:flex;align-items:center;gap:10px;padding:8px 12px;text-decoration:none;color:var(--text);" onmouseover="this.style.background='var(--panel-2)'" onmouseout="this.style.background='none'">
+        <span style="font-family:var(--font-mono);font-weight:700;font-size:13px;color:var(--gold-bright);width:60px;">${s.ticker}</span>
+        <span style="font-size:12.5px;color:var(--text-dim);flex:1;">${s.name}</span>
+        <span style="font-family:var(--font-mono);font-size:12px;">GH₵${fmt(s.price,2)}</span>
+      </a>`),
+    pages.length ? '<div style="padding:6px 12px 4px;font-size:10px;color:var(--text-faint);text-transform:uppercase;letter-spacing:0.06em;border-top:1px solid var(--border-soft);margin-top:4px;">Pages</div>' : '',
+    ...pages.map(p=>`
+      <a href="${p.href}" style="display:flex;align-items:center;gap:10px;padding:8px 12px;text-decoration:none;color:var(--text);" onmouseover="this.style.background='var(--panel-2)'" onmouseout="this.style.background='none'">
+        <span>${p.icon}</span>
+        <span style="font-size:13px;">${p.label}</span>
+      </a>`),
+  ].join('');
 }
 
 /* ---- Feedback Widget ---- */

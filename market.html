@@ -281,8 +281,8 @@ function renderStocksTable(stocks){
   tbody.innerHTML = stocks.map(s=>{
     const up=s.chg>0, dn=s.chg<0;
     return `<tr>
-      <td><div class="ticker-cell"><div class="t">${s.ticker}</div></div></td>
-      <td><div class="ticker-cell"><div class="n">${s.name}</div></div></td>
+      <td><div class="ticker-cell"><a href="company.html?t=${s.ticker}" style="text-decoration:none;color:inherit;"><div class="t">${s.ticker}</div></a></div></td>
+      <td><div class="ticker-cell"><a href="company.html?t=${s.ticker}" style="text-decoration:none;color:inherit;"><div class="n">${s.name}</div></a></div></td>
       <td><span class="sector-pill">${s.sector}</span></td>
       <td><strong>${fmt(s.price,2)}</strong></td>
       <td><span class="chip ${up?'chip-up':dn?'chip-dn':'chip-flat'}">${up?'+':''}${s.chg===0?'—':fmt(s.chg,2)+'%'}</span></td>

@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Compare Stocks — EagleEyE</title>
+<link rel="stylesheet" href="style.css">
+<script>document.documentElement.setAttribute("data-theme",localStorage.getItem("ee_theme")||"dark");</script>
+<style>
+.cmp-wrap{max-width:960px;margin:0 auto;padding:28px 24px 60px;}
+.cmp-selectors{display:grid;grid-template-columns:1fr auto 1fr;gap:16px;align-items:center;margin-bottom:28px;}
+.cmp-vs{font-size:18px;font-weight:700;color:var(--text-faint);text-align:center;}
+.cmp-select{width:100%;padding:12px 14px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--panel-2);color:var(--text);font-size:14px;font-family:var(--font-body);}
+.cmp-table{width:100%;border-collapse:collapse;background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
+.cmp-table th{padding:12px 16px;font-size:11px;color:var(--text-faint);text-transform:uppercase;letter-spacing:0.04em;background:var(--panel-2);font-weight:500;}
+.cmp-table td{padding:13px 16px;border-top:1px solid var(--border-soft);font-size:13px;}
+.cmp-table td:not(:first-child){text-align:center;font-family:var(--font-mono);}
+.cmp-label{color:var(--text-dim);}
+.winner{background:rgba(45,201,141,0.06);color:var(--green-bright);font-weight:600;}
+.loser{color:var(--text-faint);}
+.cmp-header{text-align:center;padding:16px;background:var(--panel-2);}
+.cmp-header .ticker{font-size:22px;font-weight:700;font-family:var(--font-display);}
+.cmp-header .price{font-size:18px;font-family:var(--font-mono);margin-top:4px;}
+</style>
+</head>
+<body>
+<div id="chrome-header"></div>
+<div class="cmp-wrap">
+  <div style="font-family:var(--font-display);font-size:26px;font-weight:600;margin-bottom:6px;">Compare Stocks</div>
+  <div style="font-size:13px;color:var(--text-dim);margin-bottom:24px;">Compare two GSE-listed stocks side by side.</div>
+
+  <div class="cmp-selectors">
+    <select class="cmp-select" id="stock-a" onchange="renderCompare()"><option value="">Select first stock…</option></select>
+    <div class="cmp-vs">VS</div>
+    <select class="cmp-select" id="stock-b" onchange="renderCompare()"><option value="">Select second stock…</option></select>
+  </div>
+
+  <div id="cmp-result"></div>
+</div>
+<div id="chrome-footer"></div>
+<script src="auth.js"></script>
+<script src="auth-guard.js"></script>
+<script src="data.js"></script>
+<script>
+mountChrome('compare.html');
+
+// Populate dropdowns
+['stock-a','stock-b'].forEach(id=>{
+  const sel = document.getElementById(id);
+  gseStocks.forEach(s=>{
+    sel.innerHTML+=`<option value="${s.ticker}">${s.ticker} — ${s.name}</option>`;
+  });
+});
+
+// Pre-fill from URL params
+const params = new URLSearchParams(window.location.search);
+if(params.get('a')) document.getElementById('stock-a').value = params.get('a');
+if(params.get('b')) document.getElementById('stock-b').value = params.get('b');
+if(params.get('a') && params.get('b')) renderCompare();
+
+function renderCompare(){
+  const ta = document.getElementById('stock-a').value;
+  const tb = document.getElementById('stock-b').value;
+  if(!ta || !tb){ document.getElementById('cmp-result').innerHTML=''; return; }
+  if(ta===tb){ document.getElementById('cmp-result').innerHTML='<div style="text-align:center;padding:20px;color:var(--text-faint);">Select two different stocks to compare.</div>'; return; }
+
+  const a = gseStocks.find(s=>s.ticker===ta);
+  const b = gseStocks.find(s=>s.ticker===tb);
+  if(!a||!b) return;
+
+  const mca = a.price * a.shares;
+  const mcb = b.price * b.shares;
+
+  function better(va, vb, higherIsBetter=true){
+    if(va===vb) return ['',''];
+    const aWins = higherIsBetter ? va > vb : va < vb;
+    return aWins ? ['winner','loser'] : ['loser','winner'];
+  }
+
+  const metrics = [
+    { label:'Current price', va:'GH₵'+fmt(a.price,2), vb:'GH₵'+fmt(b.price,2), ra:null, rb:null },
+    { label:'Today\'s change', va:(a.chg>=0?'+':'')+fmt(a.chg,2)+'%', vb:(b.chg>=0?'+':'')+fmt(b.chg,2)+'%', cls: better(a.chg,b.chg) },
+    { label:'Market cap', va:mca>=1000?'GH₵'+fmt(mca/1000,1)+'B':'GH₵'+fmt(mca,0)+'M', vb:mcb>=1000?'GH₵'+fmt(mcb/1000,1)+'B':'GH₵'+fmt(mcb,0)+'M', cls: better(mca,mcb) },
+    { label:'Shares outstanding', va:fmt(a.shares,2)+'M', vb:fmt(b.shares,2)+'M', cls: better(a.shares,b.shares) },
+    { label:'Est. dividend yield', va:(a.yield||0)+'%', vb:(b.yield||0)+'%', cls: better(a.yield||0,b.yield||0) },
+    { label:'Sector', va:a.sector, vb:b.sector, cls:['',''] },
+    { label:'Volume today', va:a.volume>0?fmt(a.volume,0):'—', vb:b.volume>0?fmt(b.volume,0):'—', cls: better(a.volume,b.volume) },
+  ];
+
+  document.getElementById('cmp-result').innerHTML=`
+    <table class="cmp-table">
+      <thead>
+        <tr>
+          <th style="text-align:left;">Metric</th>
+          <th class="cmp-header">
+            <div class="ticker">${a.ticker}</div>
+            <div class="price">GH₵${fmt(a.price,2)}</div>
+            <div style="font-size:11px;color:var(--text-faint);margin-top:2px;">${a.name}</div>
+          </th>
+          <th class="cmp-header">
+            <div class="ticker">${b.ticker}</div>
+            <div class="price">GH₵${fmt(b.price,2)}</div>
+            <div style="font-size:11px;color:var(--text-faint);margin-top:2px;">${b.name}</div>
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        ${metrics.map(m=>`<tr>
+          <td class="cmp-label">${m.label}</td>
+          <td class="${(m.cls||['',''])[0]}">${m.va}</td>
+          <td class="${(m.cls||['',''])[1]}">${m.vb}</td>
+        </tr>`).join('')}
+        <tr>
+          <td class="cmp-label">Actions</td>
+          <td><a href="company.html?t=${a.ticker}" class="btn btn-ghost btn-sm">View ${a.ticker}</a></td>
+          <td><a href="company.html?t=${b.ticker}" class="btn btn-ghost btn-sm">View ${b.ticker}</a></td>
+        </tr>
+      </tbody>
+    </table>`;
+
+  // Update URL
+  history.replaceState(null,'',`compare.html?a=${ta}&b=${tb}`);
+}
+
+loadLiveData(()=>{ renderCompare(); });
+</script>
+</body>
+</html>

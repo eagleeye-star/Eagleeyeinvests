@@ -195,6 +195,60 @@
   </div>
 </div>
 
+<!-- UPGRADE MODAL -->
+<div class="modal-bg" id="upgradeModal">
+  <div class="modal-box" style="max-width:420px;text-align:center;">
+    <div style="font-size:32px;margin-bottom:12px;">⭑</div>
+    <div class="modal-title">Upgrade to Premium</div>
+    <div class="modal-sub" id="upgrade-msg">Unlock unlimited holdings and advanced features.</div>
+    <div style="background:var(--panel-2);border-radius:var(--radius-sm);padding:14px;margin:16px 0;text-align:left;">
+      <div style="font-size:13px;color:var(--text-dim);line-height:1.8;">
+        ✓ Unlimited stock holdings<br>
+        ✓ Advanced portfolio analytics<br>
+        ✓ Priority price alerts<br>
+        ✓ Export portfolio to CSV/PDF<br>
+        ✓ Full dividend forecasting
+      </div>
+    </div>
+    <div class="modal-actions" style="justify-content:center;">
+      <button class="btn btn-ghost" onclick="document.getElementById('upgradeModal').classList.remove('open')">Maybe later</button>
+      <a href="pricing.html" class="btn btn-gold">View pricing →</a>
+    </div>
+  </div>
+</div>
+
+<!-- STOCK NOTE MODAL -->
+<div class="modal-bg" id="noteModal">
+  <div class="modal-box" style="max-width:400px;">
+    <div class="modal-title">Add note</div>
+    <div class="modal-sub" id="note-sub">Add a personal note to this holding.</div>
+    <div class="modal-field">
+      <label>Note</label>
+      <textarea id="note-text" placeholder="e.g. Bought on dip, target GH₵8.00. Long-term hold." style="width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;background:var(--panel-2);color:var(--text);height:90px;resize:none;font-family:var(--font-body);box-sizing:border-box;"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="document.getElementById('noteModal').classList.remove('open')">Cancel</button>
+      <button class="btn btn-gold" onclick="saveNote()">Save note</button>
+    </div>
+  </div>
+</div>
+
+<!-- PWA INSTALL PROMPT -->
+<div id="install-prompt" style="display:none;position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--panel);border:1px solid var(--gold-dim);border-radius:var(--radius);padding:14px 18px;box-shadow:0 8px 24px rgba(0,0,0,0.3);z-index:1500;max-width:320px;width:90%;">
+  <div style="display:flex;align-items:center;gap:12px;">
+    <img src="/icons/icon-72.png" style="width:40px;height:40px;border-radius:9px;" alt="EagleEyE">
+    <div style="flex:1;">
+      <div style="font-size:13px;font-weight:600;margin-bottom:3px;">Install EagleEyE</div>
+      <div style="font-size:12px;color:var(--text-dim);">Add to home screen for quick access</div>
+    </div>
+    <button onclick="document.getElementById('install-prompt').style.display='none'" style="background:none;border:none;color:var(--text-faint);cursor:pointer;font-size:16px;">✕</button>
+  </div>
+  <div style="display:flex;gap:8px;margin-top:12px;">
+    <button class="btn btn-ghost btn-sm" style="flex:1;" onclick="document.getElementById('install-prompt').style.display='none';localStorage.setItem('ee_install_dismissed','1')">Not now</button>
+    <button class="btn btn-gold btn-sm" style="flex:1;" id="install-btn">Install app</button>
+  </div>
+</div>
+
 <!-- NOTIFICATION PANEL -->
 <div id="notif-panel" style="display:none;position:fixed;top:60px;right:20px;width:340px;max-height:480px;background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);box-shadow:0 8px 32px rgba(0,0,0,0.3);z-index:1000;overflow:hidden;">
   <div style="padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
@@ -286,6 +340,7 @@
     </div>
     <div style="display:flex;gap:8px;align-items:center;">
       <span id="last-sync" style="font-size:11.5px;color:var(--text-faint);font-family:var(--font-mono);"></span>
+      <button id="theme-toggle" class="btn btn-ghost btn-sm" onclick="toggleTheme()" title="Toggle theme">☀</button>
       <div style="position:relative;display:inline-block;">
         <button class="btn btn-ghost btn-sm" onclick="toggleNotifPanel()" id="notif-bell" title="Notifications">🔔</button>
         <span id="notif-count" style="display:none;position:absolute;top:-4px;right:-6px;background:var(--red);color:#fff;font-size:9px;font-weight:700;padding:1px 4px;border-radius:8px;font-family:var(--font-mono);min-width:14px;text-align:center;pointer-events:none;"></span>
@@ -331,6 +386,7 @@
             <div id="h-limit" style="font-size:11px;margin-top:3px;display:none;font-family:var(--font-mono);"></div>
           </div>
           <div style="display:flex;gap:8px;align-items:center;">
+            <button class="btn btn-ghost btn-sm" onclick="exportCSV()" title="Export to CSV">⬇ CSV</button>
             <button class="btn btn-ghost btn-sm" onclick="printHoldings()">🖨 Print</button>
             <button class="btn btn-gold btn-sm" onclick="openModal()">+ Add holding</button>
           </div>
@@ -656,7 +712,7 @@ function renderHoldings(){
   rows.forEach(h=>{
     const up=h.pnl>=0, dayUp=h.dayPnl>=0;
     tbody.innerHTML += `<tr>
-      <td><div class="tk-cell"><div class="tk">${h.ticker}</div><div class="nm">${h.name}</div></div></td>
+      <td><div class="tk-cell"><div class="tk">${h.ticker}</div><div class="nm">${h.name}</div>${(()=>{ const notes=JSON.parse(localStorage.getItem('ee_notes')||'{}'); const n=notes[h.id]; return n?`<div style="font-size:10.5px;color:var(--text-faint);margin-top:2px;font-style:italic;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${n}">📝 ${n}</div>`:''; })()}</div></td>
       <td>${fmt(h.shares,0)}</td>
       <td>${fmt(h.avg,2)}</td>
       <td>${fmt(h.price,2)}</td>
@@ -669,6 +725,7 @@ function renderHoldings(){
       <td>
         <div class="row-actions">
           <button class="icon-btn sell-btn" onclick="openSell('${h.id}','${h.ticker}',${h.shares},${h.avg})" title="Sell shares">↓ Sell</button>
+          <button class="icon-btn" onclick="openNote('${h.id}','${h.ticker}')" title="Add note">📝</button>
           <button class="icon-btn" onclick="openEdit('${h.id}','${h.ticker}',${h.shares},${h.avg})">✏</button>
           <button class="icon-btn del" onclick="openDelete('${h.id}','${h.ticker}')">✕</button>
         </div>
@@ -1168,6 +1225,121 @@ async function confirmSell(){
   }
 }
 
+// ===== UPGRADE MODAL =====
+function showUpgradeModal(msg){
+  document.getElementById('upgrade-msg').textContent = msg||'Upgrade to Premium for unlimited access.';
+  document.getElementById('upgradeModal').classList.add('open');
+}
+document.getElementById('upgradeModal').addEventListener('click',e=>{ if(e.target===e.currentTarget) e.currentTarget.classList.remove('open'); });
+
+// ===== STOCK NOTES =====
+let noteState = { id:null, ticker:null };
+function openNote(id, ticker){
+  noteState = { id, ticker };
+  const notes = JSON.parse(localStorage.getItem('ee_notes')||'{}');
+  document.getElementById('note-sub').textContent = `Personal note for ${ticker}`;
+  document.getElementById('note-text').value = notes[id] || '';
+  document.getElementById('noteModal').classList.add('open');
+}
+document.getElementById('noteModal').addEventListener('click',e=>{ if(e.target===e.currentTarget) e.currentTarget.classList.remove('open'); });
+function saveNote(){
+  const notes = JSON.parse(localStorage.getItem('ee_notes')||'{}');
+  const text = document.getElementById('note-text').value.trim();
+  if(text) notes[noteState.id] = text;
+  else delete notes[noteState.id];
+  localStorage.setItem('ee_notes', JSON.stringify(notes));
+  document.getElementById('noteModal').classList.remove('open');
+  renderHoldings();
+}
+
+// ===== CSV EXPORT =====
+function exportCSV(){
+  if(!liveHoldings.length){ alert('No holdings to export.'); return; }
+  const pm = {};
+  gseStocks.forEach(s=>{ pm[s.ticker]=s.price; });
+  pm['KASAPREKO'] = pm['KPLC'];
+  const rows = [
+    ['Ticker','Company','Shares','Avg Cost (GH₵)','Current Price (GH₵)','Market Value (GH₵)','Gain/Loss (GH₵)','Gain/Loss (%)'],
+    ...liveHoldings.map(h=>{
+      const price = pm[h.ticker]||parseFloat(h.avg_cost)||0;
+      const value = price * h.shares;
+      const cost  = parseFloat(h.avg_cost||0) * h.shares;
+      const gl    = value - cost;
+      const glPct = cost > 0 ? (gl/cost*100).toFixed(2) : '0.00';
+      return [h.ticker, h.name||'', h.shares, parseFloat(h.avg_cost||0).toFixed(4), price.toFixed(2), value.toFixed(2), gl.toFixed(2), glPct];
+    })
+  ];
+  const csv = rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\n');
+  const blob = new Blob(['\uFEFF'+csv], {type:'text/csv;charset=utf-8'});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url;
+  a.download = `EagleEyE-Portfolio-${new Date().toISOString().substring(0,10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ===== DARK / LIGHT MODE TOGGLE =====
+function toggleTheme(){
+  const current = document.documentElement.getAttribute('data-theme');
+  const next = current === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem('ee_theme', next);
+  const btn = document.getElementById('theme-toggle');
+  if(btn) btn.textContent = next === 'dark' ? '☀' : '🌙';
+}
+(function(){
+  const theme = localStorage.getItem('ee_theme')||'dark';
+  setTimeout(()=>{
+    const btn = document.getElementById('theme-toggle');
+    if(btn) btn.textContent = theme === 'dark' ? '☀' : '🌙';
+  }, 100);
+})();
+
+// ===== PWA INSTALL PROMPT =====
+let deferredInstallPrompt = null;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  if(!localStorage.getItem('ee_install_dismissed')){
+    setTimeout(()=>{
+      const p = document.getElementById('install-prompt');
+      if(p) p.style.display = 'block';
+    }, 30000);
+  }
+});
+const installBtn = document.getElementById('install-btn');
+if(installBtn) installBtn.addEventListener('click', async () => {
+  if(deferredInstallPrompt){
+    deferredInstallPrompt.prompt();
+    const { outcome } = await deferredInstallPrompt.userChoice;
+    if(outcome==='accepted') localStorage.setItem('ee_install_dismissed','1');
+    deferredInstallPrompt = null;
+  }
+  const p = document.getElementById('install-prompt');
+  if(p) p.style.display = 'none';
+});
+
+// ===== AUTO PORTFOLIO SNAPSHOT =====
+(async function autoSnapshot(){
+  const token = localStorage.getItem('ee_access_token');
+  if(!token) return;
+  const lastSnap = localStorage.getItem('ee_last_snapshot');
+  const today = new Date().toISOString().substring(0,10);
+  if(lastSnap === today) return;
+  setTimeout(async ()=>{
+    if(!liveHoldings.length || totalValue <= 0) return;
+    try{
+      await fetch('/api/save-snapshot',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+        body:JSON.stringify({ value: totalValue }),
+      });
+      localStorage.setItem('ee_last_snapshot', today);
+    }catch(e){}
+  }, 6000);
+})();
+
 // ===== ALERTS BADGE =====
 function checkAlertsBadge(){
   const alerts = JSON.parse(localStorage.getItem('ee_alerts')||'[]');
@@ -1202,8 +1374,7 @@ setTimeout(checkAlertsBadge, 2000);
 function openModal(){
   // Free plan limit: max 10 holdings
   if(!isPremium() && liveHoldings.length >= 10){
-    alert('Free plan is limited to 10 holdings.\n\nUpgrade to Premium for unlimited holdings.');
-    window.location.href = 'pricing.html';
+    showUpgradeModal('You\'ve reached the 10 holding limit on the free plan. Upgrade to Premium for unlimited holdings, advanced analytics and more.');
     return;
   }
   tickerSel.value='';

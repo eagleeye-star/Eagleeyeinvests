@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Economic Calendar — EagleEyE</title>
+<link rel="stylesheet" href="style.css">
+<script>document.documentElement.setAttribute("data-theme",localStorage.getItem("ee_theme")||"dark");</script>
+<style>
+.cal-wrap{max-width:900px;margin:0 auto;padding:28px 24px 60px;}
+.event-row{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px 18px;margin-bottom:10px;display:grid;grid-template-columns:90px 1fr auto;gap:16px;align-items:center;}
+.event-date{font-family:var(--font-mono);font-size:12px;color:var(--text-faint);}
+.event-title{font-size:13.5px;font-weight:500;}
+.event-body{font-size:12px;color:var(--text-dim);margin-top:3px;}
+.event-impact{display:inline-block;font-size:10.5px;padding:2px 8px;border-radius:10px;font-weight:600;}
+.impact-high{background:var(--red-fill);color:var(--red);}
+.impact-med{background:var(--gold-glow);color:var(--gold-bright);}
+.impact-low{background:var(--panel-3);color:var(--text-faint);}
+.month-header{font-size:14px;font-weight:600;color:var(--gold-bright);margin:20px 0 10px;text-transform:uppercase;letter-spacing:0.06em;}
+</style>
+</head>
+<body>
+<div id="chrome-header"></div>
+<div class="cal-wrap">
+  <div style="margin-bottom:28px;">
+    <div style="font-family:var(--font-display);font-size:26px;font-weight:600;">Economic Calendar</div>
+    <div style="font-size:13px;color:var(--text-dim);margin-top:4px;">Key Ghana and West Africa economic events affecting GSE stocks</div>
+  </div>
+  <div id="cal-events"></div>
+</div>
+<div id="chrome-footer"></div>
+<script src="auth.js"></script>
+<script src="auth-guard.js"></script>
+<script src="data.js"></script>
+<script>
+mountChrome('calendar.html');
+
+const EVENTS = [
+  // August 2026
+  {date:'7 Aug 2026',  title:'Bank of Ghana MPC Meeting',            body:'Monetary Policy Committee meeting — interest rate decision expected. High market impact as rate changes affect bank stocks and borrowing costs.', impact:'high', month:'August 2026'},
+  {date:'15 Aug 2026', title:'Ghana GDP Q2 2026 Release',            body:'Ghana Statistical Service releases Q2 2026 GDP growth figures. Strong growth supports consumer and banking stocks.', impact:'high', month:'August 2026'},
+  {date:'20 Aug 2026', title:'GSE Monthly Market Report',            body:'Ghana Stock Exchange publishes monthly market statistics including turnover, market cap and price indices.', impact:'low', month:'August 2026'},
+  {date:'29 Aug 2026', title:'Ghana Consumer Price Index (CPI)',      body:'Monthly inflation data release. Inflation trends affect BoG monetary policy decisions and real returns on GSE investments.', impact:'med', month:'August 2026'},
+
+  // September 2026
+  {date:'5 Sep 2026',  title:'Enterprise Group H1 Results',          body:'EGL expected to publish H1 2026 financial results. Watch for dividend announcement and premium income growth.', impact:'med', month:'September 2026'},
+  {date:'12 Sep 2026', title:'Bank of Ghana MPC Meeting',            body:'Second MPC meeting of Q3. Policy rate decision could impact banking sector valuations.', impact:'high', month:'September 2026'},
+  {date:'18 Sep 2026', title:'GOIL H1 2026 Results',                 body:'GOIL Company Ltd expected to release half-year results. Oil prices and fuel margins key to earnings.', impact:'med', month:'September 2026'},
+  {date:'25 Sep 2026', title:'Ghana Government Budget Preview',       body:'Ministry of Finance typically releases mid-year budget review. Fiscal policy affects investor sentiment.', impact:'high', month:'September 2026'},
+
+  // October 2026
+  {date:'2 Oct 2026',  title:'Ghana Forex Reserves Update',          body:'Bank of Ghana publishes foreign exchange reserves data. Strong reserves support Cedi stability and investor confidence.', impact:'med', month:'October 2026'},
+  {date:'10 Oct 2026', title:'GSE Annual Investors Forum',           body:'Annual GSE forum bringing together listed companies, brokers and investors. Key announcements typically made.', impact:'med', month:'October 2026'},
+  {date:'20 Oct 2026', title:'Q3 2026 GDP Estimate',                body:'Preliminary Q3 GDP estimate from Ghana Statistical Service.', impact:'high', month:'October 2026'},
+  {date:'28 Oct 2026', title:'Bank of Ghana MPC Meeting',            body:'Q4 monetary policy meeting. Last chance to adjust rates before year-end.', impact:'high', month:'October 2026'},
+];
+
+const months = [...new Set(EVENTS.map(e=>e.month))];
+const impactMap = { high:'impact-high', med:'impact-med', low:'impact-low' };
+const impactLabel = { high:'High impact', med:'Medium', low:'Low' };
+
+document.getElementById('cal-events').innerHTML = months.map(m=>`
+  <div class="month-header">${m}</div>
+  ${EVENTS.filter(e=>e.month===m).map(e=>`
+    <div class="event-row">
+      <div class="event-date">${e.date}</div>
+      <div>
+        <div class="event-title">${e.title}</div>
+        <div class="event-body">${e.body}</div>
+      </div>
+      <span class="event-impact ${impactMap[e.impact]}">${impactLabel[e.impact]}</span>
+    </div>`).join('')}`).join('');
+</script>
+</body>
+</html>
