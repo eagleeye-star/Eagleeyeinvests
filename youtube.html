@@ -8,23 +8,30 @@
 <style>
 .yt-wrap{max-width:960px;margin:0 auto;padding:28px 24px 60px;}
 .yt-hero{background:linear-gradient(135deg,var(--panel) 0%,rgba(212,165,55,0.08) 100%);border:1px solid var(--gold-dim);border-radius:var(--radius);padding:32px;margin-bottom:28px;text-align:center;}
-.yt-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;}
+.yt-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;margin-bottom:28px;}
 .ep-card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;transition:border-color .15s;}
-.ep-card:hover{border-color:var(--gold-dim);}
-.ep-thumb{width:100%;aspect-ratio:16/9;background:var(--panel-2);display:flex;align-items:center;justify-content:center;font-size:40px;position:relative;}
-.ep-thumb .play{position:absolute;width:52px;height:52px;background:rgba(212,165,55,0.9);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;}
-.ep-body{padding:14px;}
+.ep-card.live{border-color:var(--gold-dim);}
+.ep-card:hover{border-color:var(--gold-bright);}
+.ep-thumb{width:100%;aspect-ratio:16/9;background:var(--panel-2);display:flex;align-items:center;justify-content:center;font-size:40px;position:relative;cursor:pointer;}
+.ep-thumb.locked{opacity:0.5;cursor:default;}
+.ep-play{position:absolute;width:52px;height:52px;background:rgba(212,165,55,0.9);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;transition:transform .15s;}
+.ep-thumb:hover .ep-play{transform:scale(1.1);}
+.ep-body{padding:16px;}
 .ep-num{font-size:10.5px;color:var(--gold-bright);font-weight:600;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.06em;}
 .ep-title{font-size:14px;font-weight:600;margin-bottom:6px;line-height:1.4;}
 .ep-desc{font-size:12px;color:var(--text-dim);line-height:1.5;}
 .ep-date{font-size:11px;color:var(--text-faint);font-family:var(--font-mono);margin-top:8px;}
-.progress-bar{height:8px;background:var(--panel-3);border-radius:4px;overflow:hidden;margin:16px 0;}
+.progress-bar{height:8px;background:var(--panel-3);border-radius:4px;overflow:hidden;margin:12px 0;}
 .progress-fill{height:100%;background:linear-gradient(90deg,var(--gold-dim),var(--gold-bright));border-radius:4px;}
+.live-badge{display:inline-block;font-size:10px;color:var(--green-bright);font-weight:600;margin-left:6px;}
 </style>
 </head>
 <body>
 <div id="chrome-header"></div>
+
 <div class="yt-wrap">
+
+  <!-- Hero -->
   <div class="yt-hero">
     <div style="font-size:13px;color:var(--gold-bright);font-weight:600;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">YouTube Series</div>
     <div style="font-family:var(--font-display);font-size:32px;font-weight:700;margin-bottom:10px;">Road to GH₵1,000,000</div>
@@ -32,20 +39,20 @@
     <div style="max-width:400px;margin:0 auto;">
       <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px;">
         <span style="color:var(--text-faint);">Progress to GH₵1M</span>
-        <span id="yt-progress-pct" style="color:var(--gold-bright);font-family:var(--font-mono);">—</span>
+        <span id="yt-pct" style="color:var(--gold-bright);font-family:var(--font-mono);">—</span>
       </div>
-      <div class="progress-bar"><div class="progress-fill" id="yt-progress-bar" style="width:0%;"></div></div>
-      <div id="yt-progress-val" style="font-size:12px;color:var(--text-dim);">Add holdings to your portfolio to track progress</div>
+      <div class="progress-bar"><div class="progress-fill" id="yt-bar" style="width:0%;"></div></div>
+      <div id="yt-val" style="font-size:12px;color:var(--text-dim);">Add holdings to your portfolio to see progress</div>
     </div>
     <div style="margin-top:20px;">
-      <a href="https://youtube.com/@eagleeyefx" target="_blank" rel="noopener" class="btn btn-gold">▶ Subscribe on YouTube</a>
+      <a href="https://youtube.com/@eagleeyefx" target="_blank" rel="noopener" class="btn btn-gold">▶ Subscribe — @eagleeyefx</a>
     </div>
   </div>
 
-  <!-- Latest episode — embedded player -->
+  <!-- Latest episode embedded -->
   <div style="font-size:20px;font-weight:600;font-family:var(--font-display);margin-bottom:16px;">Latest Episode</div>
   <div class="panel" style="margin-bottom:28px;overflow:hidden;">
-    <div style="position:relative;width:100%;padding-bottom:56.25%;background:#000;border-radius:var(--radius) var(--radius) 0 0;">
+    <div style="position:relative;width:100%;padding-bottom:56.25%;">
       <iframe
         src="https://www.youtube.com/embed/oF8GU4SCIoY"
         title="Road to GH₵1M — Episode 1"
@@ -62,37 +69,18 @@
     </div>
   </div>
 
+  <!-- Episode grid -->
   <div style="font-size:20px;font-weight:600;font-family:var(--font-display);margin-bottom:16px;">All Episodes</div>
-  <div class="yt-grid">
-    ${[
-      {ep:1, title:'Starting from scratch — my GSE investment plan', desc:'I lay out my strategy for growing GH₵0 to GH₵1M by 2030 using the Ghana Stock Exchange. Which stocks, how much to invest, and why GSE?', date:'2026', icon:'📋', url:'https://youtu.be/oF8GU4SCIoY', live:true},
-      {ep:2, title:'My first GSE trades — buying GCB, MTNGH and ETI', desc:'I make my first purchases on the GSE through EDC Stockbrokers. Walk-through of the process, fees, and CSD account setup.', date:'Coming soon', icon:'📈', url:'https://youtube.com/@eagleeyefx', live:false},
-      {ep:3, title:'Kasapreko IPO — I applied for shares. Here\'s what happened', desc:'Kasapreko announced Ghana\'s biggest manufacturing IPO. I applied for shares and received approximately 40% allotment. Full breakdown.', date:'Coming soon', icon:'🚀', url:'https://youtube.com/@eagleeyefx', live:false},
-      {ep:4, title:'Q1 2026 portfolio review — up or down?', desc:'Three months in. I review every holding, calculate total return, and discuss what I would do differently.', date:'Coming soon', icon:'📊', url:'https://youtube.com/@eagleeyefx', live:false},
-      {ep:5, title:'Dividend income — my first GSE dividend payment', desc:'I received my first dividend from EGH. How much? How does the process work? Is dividend investing on the GSE worth it?', date:'Coming soon', icon:'💰', url:'https://youtube.com/@eagleeyefx', live:false},
-      {ep:6, title:'ZEN Petroleum listing — should you buy the new stock?', desc:'ZEN Petroleum Holdings listed on the GSE. I analyse the company, valuation and whether it deserves a place in my portfolio.', date:'Coming soon', icon:'⛽', url:'https://youtube.com/@eagleeyefx', live:false},
-    ].map(e=>`<div class="ep-card" ${e.live?'style="border-color:var(--gold-dim);"':''}>
-      <div class="ep-thumb" style="${e.live?'cursor:pointer;':'opacity:0.5;'}" ${e.live?`onclick="playEpisode('${e.url}',this)"`:''}>
-        ${e.icon}
-        <div class="play" style="${e.live?'':'background:rgba(100,100,100,0.5);'}">${e.live?'▶':'🔒'}</div>
-      </div>
-      <div class="ep-body">
-        <div class="ep-num">Episode ${e.ep} ${e.live?'<span style="color:var(--green-bright);font-size:10px;">● Live</span>':''}</div>
-        <div class="ep-title">${e.title}</div>
-        <div class="ep-desc">${e.desc}</div>
-        <div class="ep-date">${e.date}</div>
-        ${e.live?`<a href="${e.url}" target="_blank" rel="noopener" class="btn btn-ghost btn-sm" style="margin-top:10px;display:inline-block;">Watch →</a>`:'<div style="font-size:11px;color:var(--text-faint);margin-top:8px;">Subscribe to be notified</div>'}
-      </div>
-    </div>`).join('')}
-  </div>
+  <div class="yt-grid" id="ep-grid"></div>
 
   <!-- Subscribe CTA -->
-  <div class="panel" style="margin-top:28px;padding:28px;text-align:center;">
+  <div class="panel" style="padding:28px;text-align:center;">
     <div style="font-size:18px;font-weight:600;margin-bottom:8px;">Don't miss the next episode</div>
-    <div style="font-size:13px;color:var(--text-dim);margin-bottom:16px;">Subscribe to the EagleEyE YouTube channel to follow the Road to GH₵1M journey live.</div>
+    <div style="font-size:13px;color:var(--text-dim);margin-bottom:16px;">Subscribe to follow the Road to GH₵1M journey live on YouTube.</div>
     <a href="https://youtube.com/@eagleeyefx" target="_blank" rel="noopener" class="btn btn-gold" style="font-size:14px;padding:12px 24px;">▶ Subscribe — @eagleeyefx</a>
   </div>
 </div>
+
 <div id="chrome-footer"></div>
 <script src="auth.js"></script>
 <script src="auth-guard.js"></script>
@@ -100,28 +88,137 @@
 <script>
 mountChrome('youtube.html');
 
-function playEpisode(url, thumbEl){
-  // Extract video ID and embed inline
-  const match = url.match(/(?:youtu\.be\/|watch\?v=)([^?&]+)/);
-  if(!match) { window.open(url,'_blank'); return; }
-  const videoId = match[1];
-  const container = thumbEl.parentElement;
-  const iframe = document.createElement('iframe');
-  iframe.src = `https://www.youtube.com/embed/${videoId}?autoplay=1`;
+// ============================================================
+// EPISODES — add new episodes here as you upload them
+// To add a new episode:
+//   1. Upload video to YouTube
+//   2. Copy the video URL e.g. https://youtu.be/ABC123xyz
+//   3. Add a new object to this array below
+//   4. Set live:true and add the url
+// ============================================================
+var EPISODES = [
+  {
+    ep: 1,
+    title: 'Starting from scratch — my GSE investment plan',
+    desc: 'I lay out my strategy for growing GH₵0 to GH₵1M by 2030 using the Ghana Stock Exchange. Which stocks, how much to invest, and why GSE?',
+    date: '2026',
+    icon: '📋',
+    url: 'https://youtu.be/oF8GU4SCIoY',
+    live: true
+  },
+  {
+    ep: 2,
+    title: 'My first GSE trades — buying GCB, MTNGH and ETI',
+    desc: 'I make my first purchases on the GSE through EDC Stockbrokers. Walk-through of the process, fees, and CSD account setup.',
+    date: 'Coming soon',
+    icon: '📈',
+    url: '',
+    live: false
+  },
+  {
+    ep: 3,
+    title: 'Kasapreko IPO — I applied for shares. Here\'s what happened',
+    desc: 'Kasapreko announced Ghana\'s biggest manufacturing IPO. I applied for shares and received approximately 40% allotment. Full breakdown.',
+    date: 'Coming soon',
+    icon: '🚀',
+    url: '',
+    live: false
+  },
+  {
+    ep: 4,
+    title: 'Q1 2026 portfolio review — up or down?',
+    desc: 'Three months in. I review every holding, calculate total return, and discuss what I would do differently.',
+    date: 'Coming soon',
+    icon: '📊',
+    url: '',
+    live: false
+  },
+  {
+    ep: 5,
+    title: 'Dividend income — my first GSE dividend payment',
+    desc: 'I received my first dividend from EGH. How much? How does the process work? Is dividend investing on the GSE worth it?',
+    date: 'Coming soon',
+    icon: '💰',
+    url: '',
+    live: false
+  },
+  {
+    ep: 6,
+    title: 'ZEN Petroleum listing — should you buy the new stock?',
+    desc: 'ZEN Petroleum Holdings listed on the GSE. I analyse the company, valuation and whether it deserves a place in my portfolio.',
+    date: 'Coming soon',
+    icon: '⛽',
+    url: '',
+    live: false
+  }
+];
+
+function getVideoId(url) {
+  if (!url) return null;
+  var m = url.match(/(?:youtu\.be\/|watch\?v=)([^?&\s]+)/);
+  return m ? m[1] : null;
+}
+
+function playEpisode(videoId) {
+  var iframe = document.createElement('iframe');
+  iframe.src = 'https://www.youtube.com/embed/' + videoId + '?autoplay=1';
   iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
   iframe.allowFullscreen = true;
   iframe.style.cssText = 'width:100%;aspect-ratio:16/9;border:none;display:block;';
-  thumbEl.replaceWith(iframe);
+  var thumb = document.getElementById('thumb-' + videoId);
+  if (thumb) thumb.replaceWith(iframe);
 }
-const profile = JSON.parse(localStorage.getItem('ee_profile')||'null');
-const goal    = parseFloat(profile?.goal||1000000);
-const val     = totalValue || 0;
-if(val > 0){
-  const pct = Math.min((val/goal*100),100);
-  document.getElementById('yt-progress-bar').style.width = pct+'%';
-  document.getElementById('yt-progress-pct').textContent = pct.toFixed(2)+'%';
-  document.getElementById('yt-progress-val').textContent = 'GH₵'+fmt(val,0)+' of GH₵'+fmt(goal,0)+' goal';
+
+function renderEpisodes() {
+  var grid = document.getElementById('ep-grid');
+  var html = '';
+
+  for (var i = 0; i < EPISODES.length; i++) {
+    var e = EPISODES[i];
+    var videoId = getVideoId(e.url);
+    var thumbStyle = e.live ? 'cursor:pointer;' : 'opacity:0.5;cursor:default;';
+    var thumbId = videoId ? 'id="thumb-' + videoId + '"' : '';
+    var thumbClick = (e.live && videoId) ? 'onclick="playEpisode(\'' + videoId + '\')"' : '';
+    var cardClass = 'ep-card' + (e.live ? ' live' : '');
+    var playIcon = e.live ? '▶' : '🔒';
+    var playBg = e.live ? 'rgba(212,165,55,0.9)' : 'rgba(100,100,100,0.5)';
+    var liveTag = e.live ? '<span class="live-badge">● Live</span>' : '';
+    var watchBtn = (e.live && e.url)
+      ? '<a href="' + e.url + '" target="_blank" rel="noopener" class="btn btn-ghost btn-sm" style="margin-top:10px;display:inline-block;">Watch on YouTube →</a>'
+      : '<div style="font-size:11px;color:var(--text-faint);margin-top:8px;">Subscribe to be notified</div>';
+
+    html += '<div class="' + cardClass + '">';
+    html += '  <div class="ep-thumb' + (e.live ? '' : ' locked') + '" style="' + thumbStyle + '" ' + thumbId + ' ' + thumbClick + '>';
+    html += '    ' + e.icon;
+    html += '    <div class="ep-play" style="background:' + playBg + ';">' + playIcon + '</div>';
+    html += '  </div>';
+    html += '  <div class="ep-body">';
+    html += '    <div class="ep-num">Episode ' + e.ep + liveTag + '</div>';
+    html += '    <div class="ep-title">' + e.title + '</div>';
+    html += '    <div class="ep-desc">' + e.desc + '</div>';
+    html += '    <div class="ep-date">' + e.date + '</div>';
+    html += '    ' + watchBtn;
+    html += '  </div>';
+    html += '</div>';
+  }
+
+  grid.innerHTML = html;
 }
+
+renderEpisodes();
+
+// Show portfolio progress
+setTimeout(function() {
+  var profile = JSON.parse(localStorage.getItem('ee_profile') || 'null');
+  var goal = parseFloat((profile && profile.goal) || 1000000);
+  var val = totalValue || 0;
+  if (val > 0) {
+    var pct = Math.min((val / goal * 100), 100);
+    document.getElementById('yt-bar').style.width = pct.toFixed(2) + '%';
+    document.getElementById('yt-pct').textContent = pct.toFixed(2) + '%';
+    document.getElementById('yt-val').textContent = 'GH₵' + fmt(val, 0) + ' of GH₵' + fmt(goal, 0) + ' goal';
+  }
+}, 500);
 </script>
 </body>
 </html>
