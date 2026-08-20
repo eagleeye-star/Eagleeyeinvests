@@ -1,208 +1,25 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="manifest" href="/manifest.json">
-  <meta name="theme-color" content="#D4A537">
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="EagleEyE">
-  <link rel="apple-touch-icon" href="/icons/icon-192.png">
-<title>EagleEyE — Ghana's Investor Intelligence Platform</title>
-<link rel="stylesheet" href="style.css">
-</head>
-<body>
-<div id="chrome-header"></div>
-<div class="wrap">
-  <section class="hero-marketing">
-    <span class="eyebrow">Built for Ghanaian investors</span>
-    <h1>Grow your wealth with <em>confidence</em></h1>
-    <p class="lead">Track stocks, monitor dividends, and analyse every GSE listing — from one clean platform built around a single goal.</p>
-    <div class="hero-cta" id="hero-cta">
-      <a href="signup.html" class="btn btn-gold btn-lg">Start free today</a>
-      <a href="market.html" class="btn btn-ghost btn-lg">View market →</a>
-    </div>
-  </section>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 
-  <!-- Market Status Widget -->
-  <div id="market-status-widget" style="margin-bottom:16px;"></div>
+    <title>AI Farms — Farm Tracker</title>
+    <meta name="description" content="Poultry and bell pepper tracking for AI Farms, Eikwe." />
 
-  <div class="snapshot-strip" id="snapStrip"></div>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="manifest" href="/manifest.webmanifest" />
 
-  <div style="font-family:var(--font-display);font-size:24px;font-weight:600;margin-bottom:14px;">Today's top movers</div>
-  <div class="grid-2-eq mb">
-    <div class="panel"><div class="panel-head"><div class="panel-title">Top gainers</div></div><table><thead><tr><th>Stock</th><th>Price</th><th>Change</th></tr></thead><tbody id="gainers"></tbody></table></div>
-    <div class="panel"><div class="panel-head"><div class="panel-title">Top losers</div></div><table><thead><tr><th>Stock</th><th>Price</th><th>Change</th></tr></thead><tbody id="losers"></tbody></table></div>
-  </div>
-
-  <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:8px;">
-    <div style="font-family:var(--font-display);font-size:24px;font-weight:600;">Why EagleEyE</div>
-    <div style="font-size:13px;color:var(--text-dim);">Everything you need in one place</div>
-  </div>
-  <div class="feature-grid mb">
-    <div class="feature-card"><div class="ico" style="background:var(--green-fill);color:var(--green-bright);">◎</div><h3>Portfolio tracking</h3><p>Every holding, cost basis, and gain in one clean view — built around your real GSE trades.</p></div>
-    <div class="feature-card"><div class="ico" style="background:var(--gold-glow);color:var(--gold-bright);">◆</div><h3>Eagle Research</h3><p>A 0–100 score for each stock across value, growth, safety, dividend, and momentum.</p></div>
-    <div class="feature-card"><div class="ico" style="background:var(--green-fill);color:var(--green-bright);">⊙</div><h3>Dividend intelligence</h3><p>Track upcoming payouts and forecast your annual dividend income across all holdings.</p></div>
-    <div class="feature-card"><div class="ico" style="background:rgba(76,143,209,0.12);color:var(--blue);">▣</div><h3>Full market centre</h3><p>Every one of the 38 GSE-listed stocks — prices, volume, sector, market cap at a glance.</p></div>
-    <div class="feature-card"><div class="ico" style="background:rgba(155,127,212,0.12);color:var(--purple);">⊞</div><h3>Stock screener</h3><p>Filter all 38 GSE listings by sector, yield, price, and Eagle Score to surface ideas fast.</p></div>
-    <div class="feature-card"><div class="ico" style="background:var(--red-fill);color:var(--red);">⚑</div><h3>Goal tracker</h3><p>Track your journey to GH₵1,000,000 with a live progress bar and milestone timeline.</p></div>
-  </div>
-
-  <div style="text-align:center;padding:48px 0 20px;">
-    <div style="font-family:var(--font-display);font-size:30px;font-weight:600;margin-bottom:12px;">Ready to start investing smarter?</div>
-    <p style="font-size:15px;color:var(--text-dim);margin-bottom:26px;">Join Ghana's growing investor community — free to start, powerful when you need it.</p>
-    <div id="bottom-cta">
-      <a href="signup.html" class="btn btn-gold btn-lg">Create your free account</a>
-    </div>
-  </div>
-</div>
-  <!-- Testimonials -->
-  <div style="font-family:var(--font-display);font-size:22px;font-weight:600;margin-bottom:16px;">What GSE investors say</div>
-  <div class="grid-3 mb" style="grid-template-columns:repeat(3,1fr);">
-    <div class="panel" style="padding:20px;">
-      <div style="font-size:13px;color:var(--text-dim);line-height:1.7;margin-bottom:14px;">"Finally a platform built for the Ghana Stock Exchange. The dividend calendar and portfolio tracker have changed how I invest."</div>
-      <div style="font-size:12px;font-weight:600;">Francis K.</div>
-      <div style="font-size:11px;color:var(--text-faint);">GSE investor since 2023</div>
-    </div>
-    <div class="panel" style="padding:20px;">
-      <div style="font-size:13px;color:var(--text-dim);line-height:1.7;margin-bottom:14px;">"The Eagle Research scoring system helped me pick stocks I would have overlooked. My portfolio is up significantly since joining."</div>
-      <div style="font-size:12px;font-weight:600;">Martin K.</div>
-      <div style="font-size:11px;color:var(--text-faint);">Accra · Premium member</div>
-    </div>
-    <div class="panel" style="padding:20px;">
-      <div style="font-size:13px;color:var(--text-dim);line-height:1.7;margin-bottom:14px;">"I tracked the Kasapreko IPO through EagleEyE and got in early. The IPO tracker and dividend alerts are excellent features."</div>
-      <div style="font-size:12px;font-weight:600;">Benecentia M.</div>
-      <div style="font-size:11px;color:var(--text-faint);">Kumasi · Free member</div>
-    </div>
-  </div>
-
-  <!-- Quick links -->
-  <div class="grid-3 mb" style="grid-template-columns:repeat(4,1fr);gap:10px;">
-    <a href="blog.html" class="panel" style="padding:14px;text-decoration:none;display:block;text-align:center;transition:border-color .15s;" onmouseover="this.style.borderColor='var(--gold-dim)'" onmouseout="this.style.borderColor='var(--border)'">
-      <div style="font-size:22px;margin-bottom:6px;">📝</div>
-      <div style="font-size:13px;font-weight:600;">Market Commentary</div>
-    </a>
-    <a href="youtube.html" class="panel" style="padding:14px;text-decoration:none;display:block;text-align:center;transition:border-color .15s;" onmouseover="this.style.borderColor='var(--gold-dim)'" onmouseout="this.style.borderColor='var(--border)'">
-      <div style="font-size:22px;margin-bottom:6px;">▶</div>
-      <div style="font-size:13px;font-weight:600;">Road to GH₵1M</div>
-    </a>
-    <a href="compare.html" class="panel" style="padding:14px;text-decoration:none;display:block;text-align:center;transition:border-color .15s;" onmouseover="this.style.borderColor='var(--gold-dim)'" onmouseout="this.style.borderColor='var(--border)'">
-      <div style="font-size:22px;margin-bottom:6px;">⚖</div>
-      <div style="font-size:13px;font-weight:600;">Compare Stocks</div>
-    </a>
-    <a href="calendar.html" class="panel" style="padding:14px;text-decoration:none;display:block;text-align:center;transition:border-color .15s;" onmouseover="this.style.borderColor='var(--gold-dim)'" onmouseout="this.style.borderColor='var(--border)'">
-      <div style="font-size:22px;margin-bottom:6px;">📅</div>
-      <div style="font-size:13px;font-weight:600;">Econ Calendar</div>
-    </a>
-  </div>
-
-<div id="chrome-footer"></div>
-<script src="auth.js"></script>
-<script src="data.js"></script>
-<script>
-mountChrome('index.html');
-
-// Market status widget
-function renderMarketStatus(){
-  const ms = getMarketStatus();
-  const now = new Date();
-  const timeStr = now.toLocaleTimeString('en-GH',{hour:'2-digit',minute:'2-digit',timeZone:'UTC'}) + ' GMT';
-  document.getElementById('market-status-widget').innerHTML = `
-    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;
-      padding:14px 18px;background:${ms.bg};border:1px solid ${ms.border};border-radius:var(--radius-sm);">
-      <div style="display:flex;align-items:center;gap:12px;">
-        <div style="position:relative;width:10px;height:10px;">
-          <div style="width:10px;height:10px;border-radius:50%;background:${ms.color};"></div>
-          ${ms.isOpen?`<div style="position:absolute;inset:0;border-radius:50%;background:${ms.color};animation:pulse 1.8s ease-in-out infinite;opacity:0.5;"></div>`:''}
-        </div>
-        <div>
-          <span style="font-size:14px;font-weight:600;color:${ms.color};">${ms.label}</span>
-          <span style="font-size:12.5px;color:var(--text-dim);margin-left:10px;">Ghana Stock Exchange</span>
-        </div>
-        <div style="font-size:12px;color:var(--text-dim);font-family:var(--font-mono);">${ms.countdown}</div>
-      </div>
-      <div style="display:flex;align-items:center;gap:16px;font-size:11.5px;color:var(--text-faint);font-family:var(--font-mono);">
-        <span>${ms.session}</span>
-        <span>Local time: ${timeStr}</span>
-      </div>
-    </div>`;
-}
-renderMarketStatus();
-setInterval(renderMarketStatus, 60000); // update every minute
-
-// Update CTAs based on login state
-const _token = localStorage.getItem('ee_access_token');
-const _profile = _token ? JSON.parse(localStorage.getItem('ee_profile')||'null') : null;
-if(_profile){
-  document.getElementById('hero-cta').innerHTML=`
-    <a href="dashboard.html" class="btn btn-gold btn-lg">Go to your dashboard →</a>
-    <a href="market.html" class="btn btn-ghost btn-lg">View market</a>
-  `;
-  document.getElementById('bottom-cta').innerHTML=`
-    <a href="dashboard.html" class="btn btn-gold btn-lg">Go to your dashboard →</a>
-  `;
-}
-
-function renderMovers(){
-  const sorted=[...gseStocks].sort((a,b)=>b.chg-a.chg);
-  const topG=sorted.filter(s=>s.chg>0)[0], topL=sorted.filter(s=>s.chg<0).slice(-1)[0];
-  const mostActive=[...gseStocks].sort((a,b)=>b.volume-a.volume)[0];
-  document.getElementById('snapStrip').innerHTML = `
-    <div class="snap-cell"><div class="lbl">GSE-CI Index</div><div class="val" id="snap-gseci">—</div><div class="sub" id="snap-gseci-sub">Loading…</div></div>
-    <div class="snap-cell"><div class="lbl">YTD Return</div><div class="val" id="snap-ytd">—</div><div class="sub" id="snap-ytd-sub" style="color:var(--text-faint);">Year to date</div></div>
-    <div class="snap-cell"><div class="lbl">Market Cap</div><div class="val" id="snap-mktcap">—</div><div class="sub" id="snap-mktcap-sub" style="color:var(--text-faint);">Total GSE</div></div>
-    <div class="snap-cell"><div class="lbl">Top gainer</div><div class="val" style="color:var(--green-bright);">${topG?topG.ticker+' +'+fmt(topG.chg,1)+'%':'—'}</div><div class="sub">${topG?'GHS '+fmt(topG.price,2):'—'}</div></div>
-    <div class="snap-cell"><div class="lbl">Top loser</div><div class="val" style="color:var(--red);">${topL?topL.ticker+' '+fmt(topL.chg,1)+'%':'—'}</div><div class="sub">${topL?'GHS '+fmt(topL.price,2):'—'}</div></div>
-    <div class="snap-cell"><div class="lbl">Most active</div><div class="val">${mostActive&&mostActive.volume>0?mostActive.ticker:'MTNGH'}</div><div class="sub">${mostActive&&mostActive.volume>0?fmt(mostActive.volume,0)+' shares':'—'}</div></div>
-  `;
-  // Load all GSE data from Supabase (admin-managed)
-  fetch('/api/gse-data?table=settings').then(r=>r.json()).then(d=>{
-    const s={};
-    (d.data||[]).forEach(i=>{ s[i.key]=i.value; });
-    const ptsNum = parseFloat(s.gseci_pts||0);
-    const up = ptsNum >= 0;
-    // GSE-CI
-    const el  = document.getElementById('snap-gseci');
-    const sub = document.getElementById('snap-gseci-sub');
-    if(el && s.gseci) el.textContent = parseFloat(s.gseci).toLocaleString();
-    if(sub) {
-      sub.textContent = (up?'▲':'▼')+' '+(up?'+':'')+ptsNum.toFixed(2)+' pts · '+s.gseci_updated;
-      sub.style.color = up ? 'var(--green-bright)' : 'var(--red)';
-    }
-    // YTD
-    const ytdEl  = document.getElementById('snap-ytd');
-    const ytdSub = document.getElementById('snap-ytd-sub');
-    if(ytdEl && s.gseci_ytd){
-      ytdEl.textContent = '+'+parseFloat(s.gseci_ytd).toFixed(1)+'%';
-      ytdEl.style.color = 'var(--green-bright)';
-    }
-    if(ytdSub && s.gseci_updated) ytdSub.textContent = s.gseci_updated;
-    // Market Cap
-    const mcEl  = document.getElementById('snap-mktcap');
-    const mcSub = document.getElementById('snap-mktcap-sub');
-    if(mcEl && s.gseci_mktcap) mcEl.textContent = s.gseci_mktcap;
-    if(mcSub && s.gseci_updated) mcSub.textContent = 'as of '+s.gseci_updated;
-  }).catch(()=>{
-    const el = document.getElementById('snap-gseci');
-    if(el) el.textContent = '14,647';
-  });
-  const g=document.getElementById('gainers'), l=document.getElementById('losers');
-  g.innerHTML=''; l.innerHTML='';
-  sorted.filter(s=>s.chg>0).slice(0,5).forEach(s=>{ g.innerHTML+=`<tr><td><div class="tk">${s.ticker}</div><div class="tk-name">${s.name}</div></td><td>GH₵${fmt(s.price,2)}</td><td><span class="chip chip-up">+${fmt(s.chg,2)}%</span></td></tr>`; });
-  sorted.filter(s=>s.chg<0).reverse().slice(0,5).forEach(s=>{ l.innerHTML+=`<tr><td><div class="tk">${s.ticker}</div><div class="tk-name">${s.name}</div></td><td>GH₵${fmt(s.price,2)}</td><td><span class="chip chip-down">${fmt(s.chg,2)}%</span></td></tr>`; });
-}
-
-renderMovers();
-loadLiveData(renderMovers);
-</script>
-  <script>
-    if('serviceWorker' in navigator){
-      window.addEventListener('load', ()=>{
-        navigator.serviceWorker.register('/sw.js')
-          .then(r=>console.log('[PWA] SW registered:', r.scope))
-          .catch(e=>console.log('[PWA] SW error:', e));
-      });
-    }
-  </script>
-</body></html>
+    <!-- Installed-app appearance -->
+    <meta name="theme-color" content="#1F1B16" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="AI Farms" />
+    <meta name="mobile-web-app-capable" content="yes" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
