@@ -92,9 +92,14 @@
       <div class="sub up" id="snap-gseci-sub">Loading…</div>
     </div>
     <div class="snap-card">
+      <div class="lbl">YTD Return</div>
+      <div class="val up" id="snap-ytd">—</div>
+      <div class="sub" id="snap-ytd-sub" style="color:var(--text-faint);">Year to date</div>
+    </div>
+    <div class="snap-card">
       <div class="lbl">Market Cap</div>
       <div class="val" id="snap-mktcap">—</div>
-      <div class="sub" style="color:var(--text-faint);">All 38 stocks</div>
+      <div class="sub" style="color:var(--text-faint);">Total GSE</div>
     </div>
     <div class="snap-card">
       <div class="lbl">Top Gainer</div>
@@ -181,14 +186,30 @@ function updateSnapshot(){
   const losers  = sorted.filter(s=>s.chg<0).reverse();
   const active  = [...gseStocks].sort((a,b)=>b.volume-a.volume)[0];
 
-  // GSE-CI — load from Supabase (admin-managed, consistent with homepage)
+  // GSE-CI + YTD + Market Cap — load from Supabase (admin-managed)
   fetch('/api/gse-data?table=settings').then(r=>r.json()).then(d=>{
     const s={};
     (d.data||[]).forEach(i=>{ s[i.key]=i.value; });
-    const el=document.getElementById('snap-gseci');
-    const sub=document.getElementById('snap-gseci-sub');
-    if(el && s.gseci) el.textContent=parseFloat(s.gseci).toLocaleString();
-    if(sub && s.gseci_change) sub.textContent=(s.gseci_change||'')+(s.gseci_updated?' · '+s.gseci_updated:'');
+    const ptsNum = parseFloat(s.gseci_pts||0);
+    const up = ptsNum >= 0;
+    const el  = document.getElementById('snap-gseci');
+    const sub = document.getElementById('snap-gseci-sub');
+    if(el && s.gseci) el.textContent = parseFloat(s.gseci).toLocaleString();
+    if(sub){
+      sub.textContent = (up?'▲':'▼')+' '+(up?'+':'')+ptsNum.toFixed(2)+' pts · '+s.gseci_updated;
+      sub.style.color = up ? 'var(--green-bright)' : 'var(--red)';
+    }
+    // YTD
+    const ytdEl = document.getElementById('snap-ytd');
+    if(ytdEl && s.gseci_ytd){
+      ytdEl.textContent = '+'+parseFloat(s.gseci_ytd).toFixed(1)+'%';
+      ytdEl.style.color = 'var(--green-bright)';
+      const ytdSub = document.getElementById('snap-ytd-sub');
+      if(ytdSub && s.gseci_updated) ytdSub.textContent = s.gseci_updated;
+    }
+    // Market Cap
+    const mcEl = document.getElementById('snap-mktcap');
+    if(mcEl && s.gseci_mktcap) mcEl.textContent = s.gseci_mktcap;
   }).catch(()=>{});
 
   // Market cap

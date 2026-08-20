@@ -155,24 +155,54 @@
 
       <!-- GSE-CI Update -->
       <div class="panel" style="margin-bottom:18px;">
-        <div class="panel-head"><div class="panel-title">📈 GSE-CI Index</div></div>
-        <div style="padding:18px;display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:12px;align-items:end;">
-          <div>
-            <div style="font-size:11px;color:var(--text-dim);margin-bottom:5px;text-transform:uppercase;letter-spacing:0.04em;">Index Value</div>
-            <input type="number" id="gseci-val" placeholder="e.g. 14647" class="search-bar" style="width:100%;">
+        <div class="panel-head"><div class="panel-title">📈 GSE-CI Index & Market Data</div></div>
+        <div style="padding:18px;">
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px;">
+            <div>
+              <label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:0.04em;">GSE-CI Value</label>
+              <input type="number" id="gseci-val" placeholder="e.g. 14647" class="search-bar" style="width:100%;">
+            </div>
+            <div>
+              <label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:0.04em;">Change (points) e.g. +12.45 or -8.20</label>
+              <input type="number" id="gseci-pts" placeholder="e.g. 12.45 or -8.20" step="0.01" class="search-bar" style="width:100%;">
+            </div>
+            <div>
+              <label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:0.04em;">YTD % e.g. 69.3</label>
+              <input type="number" id="gseci-ytd" placeholder="e.g. 69.3" step="0.01" class="search-bar" style="width:100%;">
+            </div>
           </div>
-          <div>
-            <div style="font-size:11px;color:var(--text-dim);margin-bottom:5px;text-transform:uppercase;letter-spacing:0.04em;">Change (e.g. +0.38%)</div>
-            <input type="text" id="gseci-chg" placeholder="e.g. +0.38%" class="search-bar" style="width:100%;">
+          <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:12px;margin-bottom:12px;align-items:end;">
+            <div>
+              <label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:0.04em;">Total Market Cap e.g. GH₵285B</label>
+              <input type="text" id="gseci-mktcap" placeholder="e.g. GH₵285B" class="search-bar" style="width:100%;">
+            </div>
+            <div>
+              <label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:0.04em;">Label e.g. Aug 2026</label>
+              <input type="text" id="gseci-label" placeholder="e.g. Aug 2026" class="search-bar" style="width:100%;">
+            </div>
+            <button class="btn btn-gold" onclick="updateGSECI()" style="height:38px;">Update</button>
           </div>
-          <div>
-            <div style="font-size:11px;color:var(--text-dim);margin-bottom:5px;text-transform:uppercase;letter-spacing:0.04em;">Label (e.g. Jul 2026)</div>
-            <input type="text" id="gseci-label" placeholder="e.g. Jul 2026" class="search-bar" style="width:100%;">
+
+          <!-- Preview -->
+          <div id="gseci-preview" style="background:var(--panel-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 16px;margin-bottom:12px;display:none;">
+            <div style="font-size:11px;color:var(--text-faint);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.04em;">Preview — how it will appear on site</div>
+            <div style="display:flex;gap:24px;flex-wrap:wrap;">
+              <div>
+                <div style="font-size:10px;color:var(--text-faint);">GSE-CI</div>
+                <div style="font-size:20px;font-weight:700;font-family:var(--font-display);" id="prev-gseci">—</div>
+                <div style="font-size:12px;font-family:var(--font-mono);" id="prev-change">—</div>
+                <div style="font-size:11px;color:var(--text-faint);" id="prev-ytd">—</div>
+              </div>
+              <div>
+                <div style="font-size:10px;color:var(--text-faint);">Market Cap</div>
+                <div style="font-size:20px;font-weight:700;font-family:var(--font-display);" id="prev-mktcap">—</div>
+              </div>
+            </div>
           </div>
-          <button class="btn btn-gold" onclick="updateGSECI()">Update</button>
+
+          <div style="font-size:12px;color:var(--text-faint);margin-bottom:8px;" id="gseci-current">Loading current values…</div>
+          <div class="alert-box" id="gseci-success"></div>
         </div>
-        <div style="padding:0 18px 14px;font-size:12px;color:var(--text-faint);" id="gseci-current">Loading current value…</div>
-        <div class="alert-box alert-success" id="gseci-success" style="margin:0 18px 14px;"></div>
       </div>
 
       <!-- Dividends -->
@@ -618,20 +648,23 @@ function toggleForm(id){
 }
 
 async function loadGSEAdmin(){
-  // Load current GSE-CI
+  // Load current GSE settings
   try{
     const r=await fetch('/api/gse-data?table=settings');
     const d=await r.json();
-    const settings={};
-    (d.data||[]).forEach(s=>{ settings[s.key]=s.value; });
-    document.getElementById('gseci-val').value=settings.gseci||'';
-    document.getElementById('gseci-chg').value=settings.gseci_change||'';
-    document.getElementById('gseci-label').value=settings.gseci_updated||'';
-    document.getElementById('gseci-current').textContent=
-      `Current: ${settings.gseci||'—'} (${settings.gseci_change||'—'}) as of ${settings.gseci_updated||'—'}`;
+    const s={};
+    (d.data||[]).forEach(i=>{ s[i.key]=i.value; });
+    document.getElementById('gseci-val').value    = s.gseci||'';
+    document.getElementById('gseci-pts').value    = s.gseci_pts||'';
+    document.getElementById('gseci-ytd').value    = s.gseci_ytd||'';
+    document.getElementById('gseci-mktcap').value = s.gseci_mktcap||'';
+    document.getElementById('gseci-label').value  = s.gseci_updated||'';
+    const pts = parseFloat(s.gseci_pts||0);
+    const up  = pts >= 0;
+    document.getElementById('gseci-current').textContent =
+      `Current: ${parseFloat(s.gseci||0).toLocaleString()} pts (${up?'▲':'▼'} ${Math.abs(pts)} pts today · YTD ${s.gseci_ytd||'—'}% · Mkt Cap ${s.gseci_mktcap||'—'}) as of ${s.gseci_updated||'—'}`;
   }catch(e){}
 
-  // Load dividends list
   loadGSEList('dividends','div-list',renderDivList);
   loadGSEList('ipos','ipo-list',renderIPOList);
   loadGSEList('rights','rights-list',renderRightsList);
@@ -688,20 +721,38 @@ async function deleteGSE(table, id, listId, renderFn){
 }
 
 async function updateGSECI(){
-  const val   = document.getElementById('gseci-val').value.trim();
-  const chg   = document.getElementById('gseci-chg').value.trim();
-  const label = document.getElementById('gseci-label').value.trim();
-  const sucEl = document.getElementById('gseci-success');
+  const val    = document.getElementById('gseci-val').value.trim();
+  const pts    = document.getElementById('gseci-pts').value.trim();
+  const ytd    = document.getElementById('gseci-ytd').value.trim();
+  const mktcap = document.getElementById('gseci-mktcap').value.trim();
+  const label  = document.getElementById('gseci-label').value.trim() ||
+                 new Date().toLocaleDateString('en-GH',{month:'short',year:'numeric'});
+  const sucEl  = document.getElementById('gseci-success');
   sucEl.classList.remove('show');
   if(!val){ alert('Enter a GSE-CI value.'); return; }
+
+  const ptsNum = parseFloat(pts||0);
+  const up = ptsNum >= 0;
+
+  // Show preview
+  const preview = document.getElementById('gseci-preview');
+  document.getElementById('prev-gseci').textContent = parseFloat(val).toLocaleString();
+  document.getElementById('prev-change').textContent = (up?'▲':'▼')+' '+(up?'+':'')+ptsNum.toFixed(2)+' pts';
+  document.getElementById('prev-change').style.color = up ? 'var(--green-bright)' : 'var(--red)';
+  document.getElementById('prev-ytd').textContent = 'YTD: '+(ytd||'—')+'%';
+  document.getElementById('prev-mktcap').textContent = mktcap||'—';
+  preview.style.display = 'block';
 
   const btn = document.querySelector('[onclick="updateGSECI()"]');
   if(btn){ btn.disabled=true; btn.textContent='Updating…'; }
 
   const updates = [
-    {key:'gseci',       value:val},
-    {key:'gseci_change',value:chg||'—'},
-    {key:'gseci_updated',value:label||new Date().toLocaleDateString('en-GH',{month:'short',year:'numeric'})},
+    {key:'gseci',         value: val},
+    {key:'gseci_pts',     value: pts||'0'},
+    {key:'gseci_change',  value: (up?'+':'-')+Math.abs(ptsNum).toFixed(2)+' pts'},
+    {key:'gseci_ytd',     value: ytd||'0'},
+    {key:'gseci_mktcap',  value: mktcap||''},
+    {key:'gseci_updated', value: label},
   ];
 
   let allOk = true;
@@ -712,25 +763,22 @@ async function updateGSECI(){
         headers:{'Content-Type':'application/json','X-Admin-Secret':adminSecret},
         body:JSON.stringify({value:u.value}),
       });
-      if(!r.ok){ allOk=false; console.error('Failed to update',u.key, await r.text()); }
-    }catch(e){ allOk=false; console.error('Error updating',u.key,e); }
+      if(!r.ok){ allOk=false; }
+    }catch(e){ allOk=false; }
   }
 
   if(btn){ btn.disabled=false; btn.textContent='Update'; }
 
   if(allOk){
-    document.getElementById('gseci-current').textContent=`Current: ${val} (${chg}) as of ${label}`;
-    sucEl.style.background='var(--green-fill)';
-    sucEl.style.color='var(--green-bright)';
-    sucEl.style.border='1px solid rgba(45,201,141,0.3)';
-    sucEl.textContent='✓ GSE-CI updated — changes live within 30 seconds.';
+    document.getElementById('gseci-current').textContent =
+      `Current: ${parseFloat(val).toLocaleString()} (${up?'▲':'▼'} ${Math.abs(ptsNum).toFixed(2)} pts · YTD ${ytd}% · Mkt Cap ${mktcap}) as of ${label}`;
+    sucEl.style.cssText='background:var(--green-fill);color:var(--green-bright);border:1px solid rgba(45,201,141,0.3);padding:10px 12px;border-radius:var(--radius-sm);font-size:12.5px;';
+    sucEl.textContent='✓ GSE data updated — live on site within 30 seconds.';
     sucEl.classList.add('show');
     setTimeout(()=>sucEl.classList.remove('show'),5000);
   } else {
-    sucEl.style.background='var(--red-fill)';
-    sucEl.style.color='var(--red)';
-    sucEl.style.border='1px solid rgba(217,89,76,0.3)';
-    sucEl.textContent='⚠ Update failed. Check console for details.';
+    sucEl.style.cssText='background:var(--red-fill);color:var(--red);border:1px solid rgba(217,89,76,0.3);padding:10px 12px;border-radius:var(--radius-sm);font-size:12.5px;';
+    sucEl.textContent='⚠ Update failed. Try again.';
     sucEl.classList.add('show');
   }
 }
