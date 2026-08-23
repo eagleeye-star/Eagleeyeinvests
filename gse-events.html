@@ -176,6 +176,16 @@ let activeMonth = 'all';
 function renderDividends(){
   const DIVIDENDS = window.DIVIDENDS_LIVE || window.DIVIDENDS || [];
   const now = new Date();
+
+  // Auto-update status based on dates (display only, doesn't change DB)
+  const divsWithStatus = DIVIDENDS.map(d=>{
+    let status = d.status;
+    const payDate = new Date(d.payDate);
+    const exDate  = new Date(d.exDate);
+    if(payDate < now) status = 'paid';
+    else if(exDate < now && status === 'upcoming') status = 'confirmed';
+    return { ...d, status };
+  });
   const months = ['all','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
   // Month filter chips
@@ -185,7 +195,7 @@ function renderDividends(){
   `).join('');
 
   // Filter dividends
-  let divs = DIVIDENDS;
+  let divs = divsWithStatus;
   if(!divs.length){ document.getElementById('div-body').innerHTML='<tr><td colspan="6" style="text-align:center;padding:28px;color:var(--text-faint);">No dividend data yet. Check back soon.</td></tr>'; return; }
   if(activeMonth !== 'all'){
     const mi = months.indexOf(activeMonth);
