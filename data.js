@@ -264,24 +264,43 @@ const EAGLE_SVG = `<svg viewBox="0 0 24 24" fill="none"><path d="M12 3C7 5 4 9 2
 
 /* ---- Navigation ---- */
 const NAV_ITEMS = [
-  {href:'index.html',       label:'Home'},
-  {href:'dashboard.html',   label:'Portfolio'},
-  {href:'watchlist.html',   label:'Watchlist'},
-  {href:'research.html',    label:'Eagle Research'},
-  {href:'dividends.html',   label:'Dividends'},
-  {href:'gse-events.html',  label:'GSE Events'},
-  {href:'market.html',      label:'Market'},
-  {href:'companies.html',   label:'Companies'},
-  {href:'compare.html',     label:'Compare'},
-  {href:'screener.html',    label:'Screener'},
-  {href:'news.html',        label:'News'},
-  {href:'blog.html',        label:'Commentary'},
-  {href:'calendar.html',    label:'Econ Calendar'},
-  {href:'youtube.html',     label:'Road to 1M'},
-  {href:'alerts.html',      label:'Alerts'},
-  {href:'pricing.html',     label:'Pricing'},
-  {href:'profile.html',     label:'My Profile'},
+  {href:'index.html',        label:'Home'},
+  {href:'dashboard.html',    label:'Portfolio'},
+  {href:'transactions.html', label:'Transactions'},
+  {href:'watchlist.html',    label:'Watchlist'},
+  {href:'research.html',     label:'Eagle Research'},
+  {href:'dividends.html',    label:'Dividends'},
+  {href:'gse-events.html',   label:'GSE Events'},
+  {href:'market.html',       label:'Market'},
+  {href:'companies.html',    label:'Companies'},
+  {href:'compare.html',      label:'Compare'},
+  {href:'screener.html',     label:'Screener'},
+  {href:'news.html',         label:'News'},
+  {href:'blog.html',         label:'Commentary'},
+  {href:'calendar.html',     label:'Econ Calendar'},
+  {href:'youtube.html',      label:'Road to 1M'},
+  {href:'alerts.html',       label:'Alerts'},
+  {href:'pricing.html',      label:'Pricing'},
+  {href:'profile.html',      label:'My Profile'},
 ];
+
+// ---- Transaction Logger ----
+// Saves buy/sell transactions to localStorage for history page
+function logTransaction(type, ticker, shares, price){
+  try{
+    const history = JSON.parse(localStorage.getItem('ee_tx_history')||'[]');
+    history.unshift({
+      type,
+      ticker,
+      shares:  parseFloat(shares),
+      price:   parseFloat(price),
+      total:   parseFloat(shares) * parseFloat(price),
+      date:    new Date().toISOString(),
+    });
+    // Keep last 200 transactions
+    localStorage.setItem('ee_tx_history', JSON.stringify(history.slice(0,200)));
+  }catch(e){ console.warn('logTransaction error:', e.message); }
+}
 
 function buildHeader(activePage){
   const navHtml = NAV_ITEMS.map(i=>`<a href="${i.href}" class="${i.href===activePage?'active':''}">${i.label}</a>`).join('');
