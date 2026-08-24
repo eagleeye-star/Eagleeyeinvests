@@ -28,7 +28,8 @@
     { "source": "/api/paystack-init",    "destination": "/api/payments.js" },
     { "source": "/api/paystack-webhook", "destination": "/api/payments.js" },
     { "source": "/api/paystack-verify",  "destination": "/api/payments.js" },
-    { "source": "/api/admin-notify",     "destination": "/api/admin-notify.js" }
+    { "source": "/api/admin-notify",     "destination": "/api/admin-notify.js" },
+    { "source": "/api/ai",               "destination": "/api/ai.js" }
   ],
   "headers": [
     {

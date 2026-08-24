@@ -545,19 +545,19 @@ async function sendAIMessage(){
   try{
     const systemPrompt = buildStockContext(ticker);
 
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    const response = await fetch('/api/ai', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
-        max_tokens: 1000,
+        max_tokens: 500,
         system: systemPrompt,
         messages: aiChatHistory,
       }),
     });
 
     const data = await response.json();
-    const aiText = data.content?.[0]?.text || 'Sorry, I could not generate a response. Please try again.';
+    const aiText = data.content?.[0]?.text || data.error || 'Sorry, I could not generate a response. Please try again.';
 
     // Remove typing indicator
     typingDiv.remove();
